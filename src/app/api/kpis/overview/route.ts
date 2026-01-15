@@ -1,19 +1,44 @@
 import { NextResponse } from 'next/server';
-import type { OverviewResponse, DomainSummary, KPISummary, HealthStatus } from '@/types';
+import type { OverviewResponse, DomainSummary, KPISummary, HealthStatus, TrendDirection } from '@/types';
 import { DEFAULT_DOMAINS } from '@/config/domains';
 
 /**
  * GET /api/kpis/overview
  *
  * Returns aggregated KPI summaries for all domains.
- * This is the primary endpoint for the firm health dashboard landing page.
+ * Values vary based on the selected time period.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const periodType = searchParams.get('periodType') || 'week';
 
-  // Simulated KPIs for each domain
-  const domainKPIs: Record<string, KPISummary[]> = {
+  // Multipliers to simulate different time windows showing different data
+  const periodMultipliers: Record<string, { value: number; variance: number }> = {
+    week: { value: 1.0, variance: 0 },
+    month: { value: 0.95, variance: 0.05 },
+    quarter: { value: 0.88, variance: 0.08 },
+    ytd: { value: 0.82, variance: 0.12 },
+  };
+
+  const mult = periodMultipliers[periodType] || periodMultipliers.week;
+
+  // Helper to apply variance
+  const applyVariance = (base: number, isPercent: boolean = false): number => {
+    const varied = base * mult.value + (Math.random() - 0.5) * base * mult.variance;
+    if (isPercent) return Math.min(100, Math.max(0, Math.round(varied * 10) / 10));
+    return Math.round(varied);
+  };
+
+  // Helper to determine trend based on period
+  const getTrend = (baseValue: number, currentValue: number, direction: 'higher_better' | 'lower_better' | 'target'): TrendDirection => {
+    const diff = currentValue - baseValue;
+    if (Math.abs(diff) < baseValue * 0.02) return 'flat';
+    if (direction === 'lower_better') return diff < 0 ? 'up' : 'down'; // Inverted for "lower is better"
+    return diff > 0 ? 'up' : 'down';
+  };
+
+  // Base KPI data that gets modified by time period
+  const generateKPIs = (): Record<string, KPISummary[]> => ({
     // Growth (BD)
     'd1000000-0000-0000-0000-000000000001': [
       {
@@ -38,12 +63,11 @@ export async function GET(request: Request) {
           periodStart: '2024-12-23',
           periodEnd: '2024-12-29',
           periodType: 'week',
-          value: 2450000,
-          status: 'healthy',
-          trendDirection: 'up',
+          value: applyVariance(2450000),
+          status: applyVariance(2450000) >= 2000000 ? 'healthy' : 'warning',
+          trendDirection: periodType === 'week' ? 'up' : periodType === 'month' ? 'up' : 'flat',
           ingestedAt: '',
         },
-        sparklineData: [1800000, 1950000, 2100000, 2450000],
       },
       {
         id: 'k-growth-2',
@@ -67,9 +91,9 @@ export async function GET(request: Request) {
           periodStart: '2024-10-01',
           periodEnd: '2024-12-31',
           periodType: 'quarter',
-          value: 38,
-          status: 'warning',
-          trendDirection: 'down',
+          value: applyVariance(38, true),
+          status: applyVariance(38, true) >= 35 ? 'warning' : 'critical',
+          trendDirection: periodType === 'ytd' ? 'down' : 'flat',
           ingestedAt: '',
         },
       },
@@ -94,9 +118,9 @@ export async function GET(request: Request) {
           periodStart: '2024-12-23',
           periodEnd: '2024-12-29',
           periodType: 'week',
-          value: 12,
+          value: Math.round(12 * mult.value),
           status: 'healthy',
-          trendDirection: 'up',
+          trendDirection: periodType === 'week' ? 'up' : 'flat',
           ingestedAt: '',
         },
       },
@@ -125,9 +149,9 @@ export async function GET(request: Request) {
           periodStart: '2024-12-23',
           periodEnd: '2024-12-29',
           periodType: 'week',
-          value: 8,
+          value: periodType === 'week' ? 8 : periodType === 'month' ? 9 : periodType === 'quarter' ? 7 : 6,
           status: 'healthy',
-          trendDirection: 'flat',
+          trendDirection: periodType === 'week' ? 'flat' : periodType === 'month' ? 'up' : 'down',
           ingestedAt: '',
         },
       },
@@ -153,9 +177,9 @@ export async function GET(request: Request) {
           periodStart: '2024-12-01',
           periodEnd: '2024-12-31',
           periodType: 'month',
-          value: 91,
+          value: periodType === 'week' ? 91 : periodType === 'month' ? 89 : periodType === 'quarter' ? 87 : 85,
           status: 'warning',
-          trendDirection: 'down',
+          trendDirection: periodType === 'week' ? 'up' : 'down',
           ingestedAt: '',
         },
       },
@@ -181,9 +205,9 @@ export async function GET(request: Request) {
           periodStart: '2024-10-01',
           periodEnd: '2024-12-31',
           periodType: 'quarter',
-          value: 4.7,
+          value: periodType === 'week' ? 4.7 : periodType === 'month' ? 4.6 : 4.5,
           status: 'healthy',
-          trendDirection: 'up',
+          trendDirection: periodType === 'week' ? 'up' : 'flat',
           ingestedAt: '',
         },
       },
@@ -194,7 +218,7 @@ export async function GET(request: Request) {
       {
         id: 'k-closure-1',
         processId: 'p1',
-        name: 'Contracts Closed (Q4)',
+        name: periodType === 'ytd' ? 'Contracts Closed (YTD)' : `Contracts Closed (${periodType === 'week' ? 'Week' : periodType === 'month' ? 'Month' : 'Q4'})`,
         shortName: 'Closed',
         unit: 'count',
         direction: 'higher_better',
@@ -212,7 +236,7 @@ export async function GET(request: Request) {
           periodStart: '2024-10-01',
           periodEnd: '2024-12-31',
           periodType: 'quarter',
-          value: 5,
+          value: periodType === 'week' ? 1 : periodType === 'month' ? 3 : periodType === 'quarter' ? 5 : 18,
           status: 'healthy',
           trendDirection: 'up',
           ingestedAt: '',
@@ -240,9 +264,9 @@ export async function GET(request: Request) {
           periodStart: '2024-10-01',
           periodEnd: '2024-12-31',
           periodType: 'quarter',
-          value: 18,
-          status: 'warning',
-          trendDirection: 'up',
+          value: periodType === 'week' ? 12 : periodType === 'month' ? 15 : periodType === 'quarter' ? 18 : 21,
+          status: periodType === 'week' ? 'healthy' : 'warning',
+          trendDirection: periodType === 'week' ? 'down' : 'up', // down is good for "lower is better"
           ingestedAt: '',
         },
       },
@@ -272,9 +296,9 @@ export async function GET(request: Request) {
           periodStart: '2024-12-01',
           periodEnd: '2024-12-31',
           periodType: 'month',
-          value: 42,
-          status: 'healthy',
-          trendDirection: 'down',
+          value: periodType === 'week' ? 42 : periodType === 'month' ? 44 : periodType === 'quarter' ? 48 : 52,
+          status: periodType === 'week' || periodType === 'month' ? 'healthy' : 'warning',
+          trendDirection: periodType === 'week' ? 'down' : 'up',
           ingestedAt: '',
         },
       },
@@ -301,16 +325,16 @@ export async function GET(request: Request) {
           periodStart: '2024-12-01',
           periodEnd: '2024-12-31',
           periodType: 'month',
-          value: 28500,
-          status: 'healthy',
-          trendDirection: 'down',
+          value: periodType === 'week' ? 28500 : periodType === 'month' ? 35000 : periodType === 'quarter' ? 48000 : 62000,
+          status: periodType === 'ytd' ? 'warning' : 'healthy',
+          trendDirection: periodType === 'week' ? 'down' : 'up',
           ingestedAt: '',
         },
       },
       {
         id: 'k-finance-3',
         processId: 'p3',
-        name: 'Monthly Revenue',
+        name: periodType === 'ytd' ? 'YTD Revenue' : periodType === 'quarter' ? 'Q4 Revenue' : 'Monthly Revenue',
         shortName: 'Revenue',
         unit: 'dollars',
         direction: 'higher_better',
@@ -328,7 +352,7 @@ export async function GET(request: Request) {
           periodStart: '2024-12-01',
           periodEnd: '2024-12-31',
           periodType: 'month',
-          value: 485000,
+          value: periodType === 'week' ? 125000 : periodType === 'month' ? 485000 : periodType === 'quarter' ? 1420000 : 5680000,
           status: 'healthy',
           trendDirection: 'up',
           ingestedAt: '',
@@ -360,12 +384,11 @@ export async function GET(request: Request) {
           periodStart: '2024-12-23',
           periodEnd: '2024-12-29',
           periodType: 'week',
-          value: 94,
-          status: 'healthy',
-          trendDirection: 'up',
+          value: periodType === 'week' ? 94 : periodType === 'month' ? 91 : periodType === 'quarter' ? 88 : 86,
+          status: periodType === 'week' ? 'healthy' : 'warning',
+          trendDirection: periodType === 'week' ? 'up' : periodType === 'month' ? 'up' : 'down',
           ingestedAt: '',
         },
-        sparklineData: [82, 88, 91, 94],
       },
       {
         id: 'k-ops-2',
@@ -389,9 +412,9 @@ export async function GET(request: Request) {
           periodStart: '2024-12-01',
           periodEnd: '2024-12-31',
           periodType: 'month',
-          value: 88,
-          status: 'warning',
-          trendDirection: 'up',
+          value: periodType === 'week' ? 92 : periodType === 'month' ? 88 : periodType === 'quarter' ? 82 : 78,
+          status: periodType === 'week' ? 'warning' : periodType === 'ytd' ? 'critical' : 'warning',
+          trendDirection: periodType === 'week' ? 'up' : 'down',
           ingestedAt: '',
         },
       },
@@ -417,9 +440,9 @@ export async function GET(request: Request) {
           periodStart: '2024-12-23',
           periodEnd: '2024-12-29',
           periodType: 'week',
-          value: 72,
+          value: periodType === 'week' ? 72 : periodType === 'month' ? 74 : periodType === 'quarter' ? 71 : 69,
           status: 'warning',
-          trendDirection: 'down',
+          trendDirection: periodType === 'month' ? 'up' : 'down',
           ingestedAt: '',
         },
       },
@@ -448,7 +471,7 @@ export async function GET(request: Request) {
           periodStart: '2024-10-01',
           periodEnd: '2024-12-31',
           periodType: 'quarter',
-          value: 6,
+          value: periodType === 'ytd' ? 12 : 6,
           status: 'healthy',
           trendDirection: 'flat',
           ingestedAt: '',
@@ -476,14 +499,16 @@ export async function GET(request: Request) {
           periodStart: '2024-12-01',
           periodEnd: '2024-12-31',
           periodType: 'month',
-          value: 83,
-          status: 'healthy',
-          trendDirection: 'up',
+          value: periodType === 'week' ? 83 : periodType === 'month' ? 80 : periodType === 'quarter' ? 75 : 72,
+          status: periodType === 'week' || periodType === 'month' ? 'healthy' : 'warning',
+          trendDirection: periodType === 'week' ? 'up' : 'down',
           ingestedAt: '',
         },
       },
     ],
-  };
+  });
+
+  const domainKPIs = generateKPIs();
 
   // Calculate overall status based on KPIs
   const calculateOverallStatus = (kpis: KPISummary[]): HealthStatus => {

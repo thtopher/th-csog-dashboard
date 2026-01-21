@@ -8,6 +8,8 @@ interface User {
   email: string;
   name: string;
   role: 'admin' | 'csog_member' | 'steward' | 'staff';
+  executiveId?: string;
+  title?: string;
   avatar?: string;
 }
 
@@ -21,34 +23,87 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo
+// Mock users for demo - includes all 7 executives plus admin
 const MOCK_USERS: Record<string, User & { password: string }> = {
-  'cheryl@thirdhorizon.co': {
-    id: '1',
-    email: 'cheryl@thirdhorizon.co',
-    name: 'Cheryl Robinson',
+  // Executives
+  'david@thirdhorizon.co': {
+    id: 'user-ceo',
+    email: 'david@thirdhorizon.co',
+    name: 'David Smith',
+    role: 'admin',
+    executiveId: 'exec-ceo',
+    title: 'CEO',
+    password: 'demo',
+  },
+  'greg@thirdhorizon.co': {
+    id: 'user-president',
+    email: 'greg@thirdhorizon.co',
+    name: 'Greg Williams',
     role: 'csog_member',
+    executiveId: 'exec-president',
+    title: 'President',
     password: 'demo',
   },
   'jordana@thirdhorizon.co': {
-    id: '2',
+    id: 'user-coo',
     email: 'jordana@thirdhorizon.co',
-    name: 'Jordana Smith',
-    role: 'steward',
+    name: 'Jordana Choucair',
+    role: 'csog_member',
+    executiveId: 'exec-coo',
+    title: 'COO',
     password: 'demo',
   },
+  'aisha@thirdhorizon.co': {
+    id: 'user-cfo',
+    email: 'aisha@thirdhorizon.co',
+    name: 'Aisha Waheed',
+    role: 'csog_member',
+    executiveId: 'exec-cfo',
+    title: 'CFO',
+    password: 'demo',
+  },
+  'chris@thirdhorizon.co': {
+    id: 'user-cdao',
+    email: 'chris@thirdhorizon.co',
+    name: 'Chris Hart',
+    role: 'csog_member',
+    executiveId: 'exec-cdao',
+    title: 'CDAO',
+    password: 'demo',
+  },
+  'cheryl@thirdhorizon.co': {
+    id: 'user-cgo',
+    email: 'cheryl@thirdhorizon.co',
+    name: 'Cheryl Matochik',
+    role: 'csog_member',
+    executiveId: 'exec-cgo',
+    title: 'CGO',
+    password: 'demo',
+  },
+  'ashley@thirdhorizon.co': {
+    id: 'user-cso',
+    email: 'ashley@thirdhorizon.co',
+    name: 'Ashley DeGarmo',
+    role: 'csog_member',
+    executiveId: 'exec-cso',
+    title: 'CSO',
+    password: 'demo',
+  },
+  // Admin user (non-executive)
   'topher@thirdhorizon.co': {
-    id: '3',
+    id: 'user-admin',
     email: 'topher@thirdhorizon.co',
     name: 'Topher Rodriguez',
     role: 'admin',
+    title: 'System Administrator',
     password: 'demo',
   },
+  // Demo user
   'demo@thirdhorizon.co': {
-    id: '4',
+    id: 'user-demo',
     email: 'demo@thirdhorizon.co',
     name: 'Demo User',
-    role: 'csog_member',
+    role: 'staff',
     password: 'demo',
   },
 };

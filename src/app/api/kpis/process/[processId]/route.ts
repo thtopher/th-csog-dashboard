@@ -34,6 +34,7 @@ export async function GET(
       domainId: '',
       name: 'Loading...',
       processTag: '',
+      processType: 'process',
       sopStatus: 'missing',
       displayOrder: 0,
       isActive: true,

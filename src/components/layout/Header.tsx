@@ -5,12 +5,39 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, Upload, Settings, LogOut, User, ChevronDown } from 'lucide-react';
+import { DEFAULT_EXECUTIVES, EXECUTIVE_COLORS, EXECUTIVE_INITIALS } from '@/config/executives';
+import {
+  LayoutDashboard,
+  Upload,
+  Settings,
+  LogOut,
+  ChevronDown,
+  Users,
+  Crown,
+  Briefcase,
+  Building,
+  DollarSign,
+  Database,
+  TrendingUp,
+  Handshake,
+} from 'lucide-react';
+
+// Map executive IDs to appropriate icons
+const EXECUTIVE_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  'exec-ceo': Crown,
+  'exec-president': Briefcase,
+  'exec-coo': Building,
+  'exec-cfo': DollarSign,
+  'exec-cdao': Database,
+  'exec-cgo': TrendingUp,
+  'exec-cso': Handshake,
+};
 
 export function Header() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showExecMenu, setShowExecMenu] = useState(false);
 
   const roleLabels: Record<string, string> = {
     admin: 'Administrator',
@@ -29,15 +56,75 @@ export function Header() {
           </div>
           <div className="hidden sm:block">
             <h1 className="text-lg font-semibold text-gray-900">Third Horizon</h1>
-            <p className="text-xs text-gray-500 -mt-0.5">CSOG Dashboard</p>
+            <p className="text-xs text-gray-500 -mt-0.5">Executive Dashboard</p>
           </div>
         </Link>
 
         {/* Navigation */}
         <nav className="flex items-center gap-1">
           <NavLink href="/" icon={LayoutDashboard} isActive={pathname === '/'}>
-            Dashboard
+            CEO Scorecard
           </NavLink>
+
+          {/* Executives Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExecMenu(!showExecMenu)}
+              className={cn(
+                'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                pathname.startsWith('/executive')
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              )}
+            >
+              <Users size={16} />
+              <span className="hidden sm:inline">Executives</span>
+              <ChevronDown size={14} className="text-gray-400" />
+            </button>
+
+            {showExecMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowExecMenu(false)}
+                />
+                <div className="absolute left-0 mt-2 w-72 rounded-lg border bg-white shadow-lg z-20">
+                  <div className="p-2">
+                    <p className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Executive Domains
+                    </p>
+                    {DEFAULT_EXECUTIVES.map((exec) => {
+                      const Icon = EXECUTIVE_ICONS[exec.id!] || Users;
+                      const color = EXECUTIVE_COLORS[exec.id!] || '#6b7280';
+                      return (
+                        <Link
+                          key={exec.id}
+                          href={`/executive/${exec.id}`}
+                          onClick={() => setShowExecMenu(false)}
+                          className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-gray-50 transition-colors"
+                        >
+                          <div
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-white text-xs font-medium"
+                            style={{ backgroundColor: color }}
+                          >
+                            {EXECUTIVE_INITIALS[exec.id!]}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{exec.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {exec.title} &middot; {exec.role}
+                            </p>
+                          </div>
+                          <Icon size={14} className="text-gray-400" />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <NavLink href="/upload" icon={Upload} isActive={pathname === '/upload'}>
             Upload
           </NavLink>

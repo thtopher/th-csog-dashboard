@@ -181,13 +181,74 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Demo Users */}
+          {/* Demo Users - All Executives */}
           <div className="mt-6 rounded-lg bg-gray-100 p-4">
-            <p className="text-xs font-medium text-gray-500 mb-2">Available demo accounts:</p>
-            <div className="space-y-1 text-xs text-gray-600">
-              <p><span className="font-medium">cheryl@thirdhorizon.co</span> — CSOG Member</p>
-              <p><span className="font-medium">jordana@thirdhorizon.co</span> — Steward</p>
-              <p><span className="font-medium">topher@thirdhorizon.co</span> — Admin</p>
+            <p className="text-xs font-medium text-gray-500 mb-3">Executive Accounts (password: demo)</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => { setEmail('david@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
+              >
+                <span className="font-medium text-gray-900">David Smith</span>
+                <span className="text-gray-500 block">CEO</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('greg@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
+              >
+                <span className="font-medium text-gray-900">Greg Williams</span>
+                <span className="text-gray-500 block">President</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('jordana@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
+              >
+                <span className="font-medium text-gray-900">Jordana Choucair</span>
+                <span className="text-gray-500 block">COO</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('aisha@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
+              >
+                <span className="font-medium text-gray-900">Aisha Waheed</span>
+                <span className="text-gray-500 block">CFO</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('chris@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
+              >
+                <span className="font-medium text-gray-900">Chris Hart</span>
+                <span className="text-gray-500 block">CDAO</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('cheryl@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
+              >
+                <span className="font-medium text-gray-900">Cheryl Matochik</span>
+                <span className="text-gray-500 block">CGO</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('ashley@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
+              >
+                <span className="font-medium text-gray-900">Ashley DeGarmo</span>
+                <span className="text-gray-500 block">CSO</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('topher@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
+              >
+                <span className="font-medium text-gray-900">Topher Rodriguez</span>
+                <span className="text-gray-500 block">Admin</span>
+              </button>
             </div>
           </div>
         </div>

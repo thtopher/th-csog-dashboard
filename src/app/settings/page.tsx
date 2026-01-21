@@ -6,23 +6,18 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { cn } from '@/lib/utils/cn';
 import {
   Users,
-  Database,
   Bell,
-  Shield,
   Palette,
   Link as LinkIcon,
   Plus,
   Edit2,
   Trash2,
-  ChevronRight,
   Check,
-  X,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
 
 const TABS = [
   { id: 'users', label: 'Users', icon: Users },
-  { id: 'domains', label: 'Domains & KPIs', icon: Database },
   { id: 'integrations', label: 'Integrations', icon: LinkIcon },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -85,7 +80,6 @@ export default function SettingsPage() {
           {/* Content Area */}
           <div className="flex-1 min-w-0">
             {activeTab === 'users' && <UsersSettings />}
-            {activeTab === 'domains' && <DomainsSettings />}
             {activeTab === 'integrations' && <IntegrationsSettings />}
             {activeTab === 'notifications' && <NotificationsSettings />}
             {activeTab === 'appearance' && <AppearanceSettings />}
@@ -175,63 +169,6 @@ function UsersSettings() {
           <div className="flex items-start gap-2">
             <RoleBadge role="staff" />
             <span className="text-gray-600">View aggregated metrics only</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DomainsSettings() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Domains & KPIs</h2>
-        <p className="text-sm text-gray-500">Configure operational domains and KPI definitions</p>
-      </div>
-
-      <div className="rounded-lg border bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-gray-900">Operational Domains</h3>
-          <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
-            <Plus size={14} />
-            Add Domain
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {['Growth (BD)', 'Service Delivery', 'Contract Closure', 'Finance', 'Internal Operations', 'Board & CSOG'].map((domain, i) => (
-            <div key={domain} className="flex items-center justify-between rounded-lg border p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: ['#2563eb', '#059669', '#7c3aed', '#dc2626', '#ea580c', '#0891b2'][i] }} />
-                <span className="font-medium text-gray-900">{domain}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-500">{[4, 4, 3, 4, 4, 3][i]} processes</span>
-                <ChevronRight size={16} className="text-gray-400" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-lg border bg-white p-6 shadow-sm">
-        <h3 className="font-medium text-gray-900 mb-4">KPI Configuration</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          KPIs are configured per process. Select a domain above to manage its KPIs.
-        </p>
-        <div className="grid grid-cols-3 gap-4 text-center py-6 border-t">
-          <div>
-            <div className="text-2xl font-bold text-gray-900">22</div>
-            <div className="text-sm text-gray-500">Total KPIs</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-900">18</div>
-            <div className="text-sm text-gray-500">Active</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-900">3</div>
-            <div className="text-sm text-gray-500">Data Sources</div>
           </div>
         </div>
       </div>

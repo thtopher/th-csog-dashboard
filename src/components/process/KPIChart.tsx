@@ -100,7 +100,7 @@ function renderChart(
     margin: { top: 5, right: 5, left: 5, bottom: 5 },
   };
 
-  const formatTooltip = (value: number) => formatValue(value, format);
+  const formatTooltip = (value: number | undefined) => value !== undefined ? formatValue(value, format) : '--';
 
   switch (type) {
     case 'line':

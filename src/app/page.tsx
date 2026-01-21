@@ -1,37 +1,58 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
-import { FirmHealthGrid } from '@/components/dashboard/FirmHealthGrid';
+import { CEOScorecard } from '@/components/dashboard/CEOScorecard';
+import { ExecutiveGrid } from '@/components/dashboard/ExecutiveTile';
 import { GlobalFilters } from '@/components/dashboard/GlobalFilters';
-import { useDashboard } from '@/hooks/useDashboard';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ExecutiveOverviewResponse, PeriodType } from '@/types';
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
-  const {
-    domains,
-    isLoading,
-    error,
-    selectedPeriod,
-    setSelectedPeriod,
-    lastUpdated,
-    refresh,
-    isRefreshing,
-  } = useDashboard();
+  const [data, setData] = useState<ExecutiveOverviewResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('week');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login');
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Show loading while checking auth
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated, selectedPeriod]);
+
+  async function fetchData() {
+    try {
+      setIsLoading(true);
+      const res = await fetch(`/api/executives?periodType=${selectedPeriod}`);
+      if (!res.ok) throw new Error('Failed to fetch data');
+      const json = await res.json();
+      setData(json);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleRefresh() {
+    setIsRefreshing(true);
+    await fetchData();
+    setIsRefreshing(false);
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -40,10 +61,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Don't render dashboard if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -52,9 +70,9 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Firm Health</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Executive Dashboard</h1>
           <p className="mt-1 text-gray-500">
-            Overview of Third Horizon operational performance
+            SOP-aligned control center for Third Horizon operations
           </p>
         </div>
 
@@ -63,8 +81,8 @@ export default function DashboardPage() {
           <GlobalFilters
             selectedPeriod={selectedPeriod}
             onPeriodChange={setSelectedPeriod}
-            lastUpdated={lastUpdated || undefined}
-            onRefresh={refresh}
+            lastUpdated={data?.lastUpdated}
+            onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
           />
         </div>
@@ -76,13 +94,29 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Domain Grid */}
-        <FirmHealthGrid domains={domains} isLoading={isLoading} />
+        {/* CEO Scorecard */}
+        <div className="mb-10">
+          {data?.ceoScorecard && (
+            <CEOScorecard scorecard={data.ceoScorecard} isLoading={isLoading} />
+          )}
+        </div>
+
+        {/* Executive Grid */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Executive Domains</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Click on any executive to view their processes, functions, and RACI assignments
+          </p>
+          <ExecutiveGrid
+            executives={data?.executives || []}
+            isLoading={isLoading}
+          />
+        </div>
 
         {/* Footer Note */}
         <div className="mt-12 text-center">
           <p className="text-sm text-gray-400">
-            Click on any domain tile to view detailed metrics and processes
+            Dashboard aligned with Third Horizon SOP 2026 &middot; F-EOC6 CEO Scorecard
           </p>
         </div>
       </main>

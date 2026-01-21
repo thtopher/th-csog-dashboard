@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils/cn';
-import { Calendar, Filter, RefreshCw } from 'lucide-react';
+import { Calendar, RefreshCw } from 'lucide-react';
 import { TIME_WINDOWS } from '@/config/domains';
 import type { PeriodType } from '@/types';
 
@@ -64,64 +64,6 @@ export function GlobalFilters({
             Refresh
           </button>
         )}
-      </div>
-    </div>
-  );
-}
-
-interface DomainFilterProps {
-  domains: { id: string; name: string }[];
-  selectedDomains: string[];
-  onSelectionChange: (domains: string[]) => void;
-}
-
-export function DomainFilter({
-  domains,
-  selectedDomains,
-  onSelectionChange,
-}: DomainFilterProps) {
-  const toggleDomain = (domainId: string) => {
-    if (selectedDomains.includes(domainId)) {
-      onSelectionChange(selectedDomains.filter((id) => id !== domainId));
-    } else {
-      onSelectionChange([...selectedDomains, domainId]);
-    }
-  };
-
-  const selectAll = () => onSelectionChange(domains.map((d) => d.id));
-  const clearAll = () => onSelectionChange([]);
-
-  return (
-    <div className="flex items-center gap-3">
-      <Filter size={16} className="text-gray-500" />
-      <div className="flex flex-wrap items-center gap-2">
-        {domains.map((domain) => (
-          <button
-            key={domain.id}
-            onClick={() => toggleDomain(domain.id)}
-            className={cn(
-              'rounded-full px-3 py-1 text-xs font-medium transition-colors border',
-              selectedDomains.includes(domain.id)
-                ? 'bg-gray-900 text-white border-gray-900'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-            )}
-          >
-            {domain.name}
-          </button>
-        ))}
-        <span className="text-gray-300 mx-1">|</span>
-        <button
-          onClick={selectAll}
-          className="text-xs text-gray-500 hover:text-gray-700"
-        >
-          All
-        </button>
-        <button
-          onClick={clearAll}
-          className="text-xs text-gray-500 hover:text-gray-700"
-        >
-          None
-        </button>
       </div>
     </div>
   );

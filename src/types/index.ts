@@ -7,6 +7,12 @@
 
 export type SOPStatus = 'documented' | 'partial' | 'missing';
 
+export type ProcessType = 'process' | 'function';
+
+export type RACIRole = 'A' | 'R' | 'C' | 'I';
+
+export type TaskStatus = 'active' | 'in_progress' | 'completed' | 'blocked';
+
 export type KPIDirection = 'higher_better' | 'lower_better' | 'target';
 
 export type KPIUnit = 'percent' | 'count' | 'dollars' | 'days' | 'hours';
@@ -17,7 +23,7 @@ export type ChartType = 'bar' | 'line' | 'area' | 'stacked_bar' | 'gauge';
 
 export type RefreshCadence = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
 
-export type PeriodType = 'day' | 'week' | 'biweek' | 'month' | 'quarter' | 'year';
+export type PeriodType = 'day' | 'week' | 'biweek' | 'month' | 'quarter' | 'year' | 'ytd';
 
 export type TrendDirection = 'up' | 'down' | 'flat';
 
@@ -41,6 +47,19 @@ export type IngestionStatus = 'pending' | 'processing' | 'completed' | 'failed' 
 // CORE ENTITIES
 // ============================================
 
+export interface Executive {
+  id: string;
+  name: string;
+  title: string;
+  role: string;
+  email?: string;
+  photoUrl?: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface OperationalDomain {
   id: string;
   name: string;
@@ -60,8 +79,11 @@ export interface Process {
   id: string;
   domainId: string;
   parentProcessId?: string;
+  executiveId?: string;
   name: string;
+  code?: string;
   processTag: string;
+  processType: ProcessType;
   description?: string;
   stewardName?: string;
   stewardEmail?: string;
@@ -69,6 +91,28 @@ export interface Process {
   sopLink?: string;
   displayOrder: number;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Task {
+  id: string;
+  processId: string;
+  code: string;
+  description: string;
+  displayOrder: number;
+  status: TaskStatus;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RACIAssignment {
+  id: string;
+  taskId: string;
+  personName: string;
+  personId?: string;
+  role: RACIRole;
   createdAt: string;
   updatedAt: string;
 }
@@ -155,6 +199,9 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  executiveId?: string;
+  title?: string;
+  reportsTo?: string;
   stewardedDomains?: string[];
   preferences?: UserPreferences;
   lastLoginAt?: string;
@@ -200,6 +247,76 @@ export interface ValidationError {
 // COMPOSITE / VIEW TYPES
 // ============================================
 
+/** Executive with their processes, functions, and aggregated metrics */
+export interface ExecutiveSummary extends Executive {
+  processes: ProcessSummary[];
+  functions: ProcessSummary[];
+  overallStatus: HealthStatus;
+  processCount: number;
+  functionCount: number;
+  taskCount: number;
+}
+
+/** Task with RACI assignments */
+export interface TaskWithRACI extends Task {
+  accountable?: string;
+  responsible?: string;
+  contributors?: string[];
+  informed?: string[];
+  process?: Process;
+}
+
+/** Process with tasks */
+export interface ProcessWithTasks extends Process {
+  tasks: TaskWithRACI[];
+  executive?: Executive;
+}
+
+/** CEO Scorecard metrics per F-EOC6 requirements */
+export interface CEOScorecard {
+  pipelineHealth: {
+    pipelineValue: number;
+    pipelineValueChange?: number;
+    winRate: number;
+    winRateChange?: number;
+    status: HealthStatus;
+  };
+  deliveryHealth: {
+    onTimeDelivery: number;
+    onTimeDeliveryChange?: number;
+    clientSatisfaction: number;
+    clientSatisfactionChange?: number;
+    status: HealthStatus;
+  };
+  margin: {
+    contractMargin: number;
+    contractMarginChange?: number;
+    status: HealthStatus;
+  };
+  cash: {
+    cashPosition: number;
+    cashPositionChange?: number;
+    dso: number;
+    dsoChange?: number;
+    ar90Plus: number;
+    ar90PlusChange?: number;
+    status: HealthStatus;
+  };
+  staffingCapacity: {
+    billableUtilization: number;
+    billableUtilizationChange?: number;
+    openPositions: number;
+    openPositionsChange?: number;
+    status: HealthStatus;
+  };
+  strategicInitiatives: {
+    initiativesOnTrack: number;
+    initiativesTotal: number;
+    status: HealthStatus;
+  };
+  lastUpdated: string;
+}
+
 /** Domain with aggregated KPI summary for tile display */
 export interface DomainSummary extends OperationalDomain {
   processes: ProcessSummary[];
@@ -213,6 +330,8 @@ export interface ProcessSummary extends Process {
   kpis: KPISummary[];
   childProcesses?: ProcessSummary[];
   activeGapsCount: number;
+  overallStatus?: HealthStatus;
+  taskCount?: number;
 }
 
 /** KPI definition with latest value */
@@ -276,4 +395,64 @@ export interface UploadResponse {
   ingestionId: string;
   recordsProcessed: number;
   errors?: ValidationError[];
+}
+
+// ============================================
+// EXECUTIVE API TYPES
+// ============================================
+
+export interface ExecutiveOverviewResponse {
+  executives: ExecutiveSummary[];
+  ceoScorecard: CEOScorecard;
+  lastUpdated: string;
+}
+
+export interface ExecutiveDetailResponse {
+  executive: ExecutiveSummary;
+  processes: ProcessWithTasks[];
+  functions: ProcessWithTasks[];
+}
+
+export interface TaskListResponse {
+  tasks: TaskWithRACI[];
+  process: Process;
+  total: number;
+}
+
+export interface RACIMatrixResponse {
+  tasks: TaskWithRACI[];
+  process: Process;
+  executive: Executive;
+}
+
+// ============================================
+// AUDIT / DATA SOURCE TYPES
+// ============================================
+
+export interface DataSourceInfo {
+  name: string;
+  lastUpdated: string;
+  uploadedBy?: string;
+  uploadedByEmail?: string;
+  executiveId?: string;
+  recordCount?: number;
+}
+
+export interface AuditMetadata {
+  calculatedAt: string;
+  calculationMethod: string;
+  formula?: string;
+  dataSources: DataSourceInfo[];
+}
+
+/** CEO Scorecard with audit metadata */
+export interface CEOScorecardWithAudit extends CEOScorecard {
+  audit: {
+    pipelineHealth: AuditMetadata;
+    deliveryHealth: AuditMetadata;
+    margin: AuditMetadata;
+    cash: AuditMetadata;
+    staffingCapacity: AuditMetadata;
+    strategicInitiatives: AuditMetadata;
+  };
 }

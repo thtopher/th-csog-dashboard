@@ -37,7 +37,7 @@ export const DEFAULT_EXECUTIVES: Partial<Executive>[] = [
     name: 'David Smith',
     title: 'CEO',
     role: 'Business Oversight',
-    email: 'david@thirdhorizon.co',
+    email: 'david@thirdhorizon.com',
     displayOrder: 1,
   },
   {
@@ -45,7 +45,7 @@ export const DEFAULT_EXECUTIVES: Partial<Executive>[] = [
     name: 'Greg Williams',
     title: 'President',
     role: 'Client Operations',
-    email: 'greg@thirdhorizon.co',
+    email: 'greg@thirdhorizon.com',
     displayOrder: 2,
   },
   {
@@ -53,7 +53,7 @@ export const DEFAULT_EXECUTIVES: Partial<Executive>[] = [
     name: 'Jordana Choucair',
     title: 'COO',
     role: 'Business Operations',
-    email: 'jordana@thirdhorizon.co',
+    email: 'jordana@thirdhorizon.com',
     displayOrder: 3,
   },
   {
@@ -61,7 +61,7 @@ export const DEFAULT_EXECUTIVES: Partial<Executive>[] = [
     name: 'Aisha Waheed',
     title: 'CFO',
     role: 'Finance',
-    email: 'aisha@thirdhorizon.co',
+    email: 'aisha@thirdhorizon.com',
     displayOrder: 4,
   },
   {
@@ -69,7 +69,7 @@ export const DEFAULT_EXECUTIVES: Partial<Executive>[] = [
     name: 'Chris Hart',
     title: 'CDAO',
     role: 'Data Systems & IT',
-    email: 'chris@thirdhorizon.co',
+    email: 'chris@thirdhorizon.com',
     displayOrder: 5,
   },
   {
@@ -77,7 +77,7 @@ export const DEFAULT_EXECUTIVES: Partial<Executive>[] = [
     name: 'Cheryl Matochik',
     title: 'CGO',
     role: 'Growth',
-    email: 'cheryl@thirdhorizon.co',
+    email: 'cheryl@thirdhorizon.com',
     displayOrder: 6,
   },
   {
@@ -85,7 +85,7 @@ export const DEFAULT_EXECUTIVES: Partial<Executive>[] = [
     name: 'Ashley DeGarmo',
     title: 'CSO',
     role: 'Client Engagement',
-    email: 'ashley@thirdhorizon.co',
+    email: 'ashley@thirdhorizon.com',
     displayOrder: 7,
   },
 ];

@@ -26,63 +26,63 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Mock users for demo - includes all 7 executives plus admin
 const MOCK_USERS: Record<string, User & { password: string }> = {
   // Executives
-  'david@thirdhorizon.co': {
+  'david@thirdhorizon.com': {
     id: 'user-ceo',
-    email: 'david@thirdhorizon.co',
+    email: 'david@thirdhorizon.com',
     name: 'David Smith',
     role: 'admin',
     executiveId: 'exec-ceo',
     title: 'CEO',
     password: 'demo',
   },
-  'greg@thirdhorizon.co': {
+  'greg@thirdhorizon.com': {
     id: 'user-president',
-    email: 'greg@thirdhorizon.co',
+    email: 'greg@thirdhorizon.com',
     name: 'Greg Williams',
     role: 'csog_member',
     executiveId: 'exec-president',
     title: 'President',
     password: 'demo',
   },
-  'jordana@thirdhorizon.co': {
+  'jordana@thirdhorizon.com': {
     id: 'user-coo',
-    email: 'jordana@thirdhorizon.co',
+    email: 'jordana@thirdhorizon.com',
     name: 'Jordana Choucair',
     role: 'csog_member',
     executiveId: 'exec-coo',
     title: 'COO',
     password: 'demo',
   },
-  'aisha@thirdhorizon.co': {
+  'aisha@thirdhorizon.com': {
     id: 'user-cfo',
-    email: 'aisha@thirdhorizon.co',
+    email: 'aisha@thirdhorizon.com',
     name: 'Aisha Waheed',
     role: 'csog_member',
     executiveId: 'exec-cfo',
     title: 'CFO',
     password: 'demo',
   },
-  'chris@thirdhorizon.co': {
+  'chris@thirdhorizon.com': {
     id: 'user-cdao',
-    email: 'chris@thirdhorizon.co',
+    email: 'chris@thirdhorizon.com',
     name: 'Chris Hart',
     role: 'csog_member',
     executiveId: 'exec-cdao',
     title: 'CDAO',
     password: 'demo',
   },
-  'cheryl@thirdhorizon.co': {
+  'cheryl@thirdhorizon.com': {
     id: 'user-cgo',
-    email: 'cheryl@thirdhorizon.co',
+    email: 'cheryl@thirdhorizon.com',
     name: 'Cheryl Matochik',
     role: 'csog_member',
     executiveId: 'exec-cgo',
     title: 'CGO',
     password: 'demo',
   },
-  'ashley@thirdhorizon.co': {
+  'ashley@thirdhorizon.com': {
     id: 'user-cso',
-    email: 'ashley@thirdhorizon.co',
+    email: 'ashley@thirdhorizon.com',
     name: 'Ashley DeGarmo',
     role: 'csog_member',
     executiveId: 'exec-cso',
@@ -90,18 +90,18 @@ const MOCK_USERS: Record<string, User & { password: string }> = {
     password: 'demo',
   },
   // Admin user (non-executive)
-  'topher@thirdhorizon.co': {
+  'topher@thirdhorizon.com': {
     id: 'user-admin',
-    email: 'topher@thirdhorizon.co',
+    email: 'topher@thirdhorizon.com',
     name: 'Topher Rodriguez',
     role: 'admin',
     title: 'System Administrator',
     password: 'demo',
   },
   // Demo user
-  'demo@thirdhorizon.co': {
+  'demo@thirdhorizon.com': {
     id: 'user-demo',
-    email: 'demo@thirdhorizon.co',
+    email: 'demo@thirdhorizon.com',
     name: 'Demo User',
     role: 'staff',
     password: 'demo',

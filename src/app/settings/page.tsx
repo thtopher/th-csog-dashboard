@@ -24,10 +24,10 @@ const TABS = [
 ];
 
 const MOCK_USERS = [
-  { id: '1', name: 'Cheryl Robinson', email: 'cheryl@thirdhorizon.co', role: 'csog_member' as UserRole, lastLogin: '2024-12-29' },
-  { id: '2', name: 'Jordana Smith', email: 'jordana@thirdhorizon.co', role: 'steward' as UserRole, lastLogin: '2024-12-29' },
-  { id: '3', name: 'Topher Rodriguez', email: 'topher@thirdhorizon.co', role: 'admin' as UserRole, lastLogin: '2024-12-29' },
-  { id: '4', name: 'Alex Chen', email: 'alex@thirdhorizon.co', role: 'staff' as UserRole, lastLogin: '2024-12-27' },
+  { id: '1', name: 'Cheryl Robinson', email: 'cheryl@thirdhorizon.com', role: 'csog_member' as UserRole, lastLogin: '2024-12-29' },
+  { id: '2', name: 'Jordana Smith', email: 'jordana@thirdhorizon.com', role: 'steward' as UserRole, lastLogin: '2024-12-29' },
+  { id: '3', name: 'Topher Rodriguez', email: 'topher@thirdhorizon.com', role: 'admin' as UserRole, lastLogin: '2024-12-29' },
+  { id: '4', name: 'Alex Chen', email: 'alex@thirdhorizon.com', role: 'staff' as UserRole, lastLogin: '2024-12-27' },
 ];
 
 const MOCK_INTEGRATIONS = [

@@ -7,13 +7,13 @@
 -- The 7 C-suite roles per Third Horizon SOP
 -- ============================================
 INSERT INTO executives (id, name, title, role, email, display_order) VALUES
-    ('exec-ceo', 'David Smith', 'CEO', 'Business Oversight', 'david@thirdhorizon.co', 1),
-    ('exec-president', 'Greg Williams', 'President', 'Client Operations', 'greg@thirdhorizon.co', 2),
-    ('exec-coo', 'Jordana Choucair', 'COO', 'Business Operations', 'jordana@thirdhorizon.co', 3),
-    ('exec-cfo', 'Aisha Waheed', 'CFO', 'Finance', 'aisha@thirdhorizon.co', 4),
-    ('exec-cdao', 'Chris Hart', 'CDAO', 'Data Systems & IT', 'chris@thirdhorizon.co', 5),
-    ('exec-cgo', 'Cheryl Matochik', 'CGO', 'Growth', 'cheryl@thirdhorizon.co', 6),
-    ('exec-cso', 'Ashley DeGarmo', 'CSO', 'Client Engagement', 'ashley@thirdhorizon.co', 7);
+    ('exec-ceo', 'David Smith', 'CEO', 'Business Oversight', 'david@thirdhorizon.com', 1),
+    ('exec-president', 'Greg Williams', 'President', 'Client Operations', 'greg@thirdhorizon.com', 2),
+    ('exec-coo', 'Jordana Choucair', 'COO', 'Business Operations', 'jordana@thirdhorizon.com', 3),
+    ('exec-cfo', 'Aisha Waheed', 'CFO', 'Finance', 'aisha@thirdhorizon.com', 4),
+    ('exec-cdao', 'Chris Hart', 'CDAO', 'Data Systems & IT', 'chris@thirdhorizon.com', 5),
+    ('exec-cgo', 'Cheryl Matochik', 'CGO', 'Growth', 'cheryl@thirdhorizon.com', 6),
+    ('exec-cso', 'Ashley DeGarmo', 'CSO', 'Client Engagement', 'ashley@thirdhorizon.com', 7);
 
 -- ============================================
 -- UPDATE EXISTING DOMAINS TO MAP TO EXECUTIVES

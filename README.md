@@ -185,15 +185,15 @@ The application includes 9 demo accounts for testing (password: `demo` for all):
 
 | Email | Role | Upload Access |
 |-------|------|---------------|
-| david@thirdhorizon.co | CEO | F-EOC, Strategic Planning data |
-| greg@thirdhorizon.co | President | Cash Flow data |
-| jordana@thirdhorizon.co | COO | Harvest, Training, Staffing |
-| aisha@thirdhorizon.co | CFO | AR, AP, Month-Close |
-| chris@thirdhorizon.co | CDAO | Starset, HMRF data |
-| cheryl@thirdhorizon.co | CGO | BD Pipeline |
-| ashley@thirdhorizon.co | CSO | Delivery, Contracts |
-| topher@thirdhorizon.co | Admin | All upload types |
-| demo@thirdhorizon.co | Staff | Read-only |
+| david@thirdhorizon.com | CEO | F-EOC, Strategic Planning data |
+| greg@thirdhorizon.com | President | Cash Flow data |
+| jordana@thirdhorizon.com | COO | Harvest, Training, Staffing |
+| aisha@thirdhorizon.com | CFO | AR, AP, Month-Close |
+| chris@thirdhorizon.com | CDAO | Starset, HMRF data |
+| cheryl@thirdhorizon.com | CGO | BD Pipeline |
+| ashley@thirdhorizon.com | CSO | Delivery, Contracts |
+| topher@thirdhorizon.com | Admin | All upload types |
+| demo@thirdhorizon.com | Staff | Read-only |
 
 ## Excel Templates
 

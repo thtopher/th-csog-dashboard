@@ -39,7 +39,7 @@ export default function LoginPage() {
   };
 
   const fillDemoCredentials = () => {
-    setEmail('demo@thirdhorizon.co');
+    setEmail('demo@thirdhorizon.com');
     setPassword('demo');
     setError('');
   };
@@ -79,7 +79,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@thirdhorizon.co"
+                  placeholder="you@thirdhorizon.com"
                   required
                   autoComplete="email"
                   className={cn(
@@ -187,7 +187,7 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => { setEmail('david@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                onClick={() => { setEmail('david@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
                 <span className="font-medium text-gray-900">David Smith</span>
@@ -195,7 +195,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setEmail('greg@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                onClick={() => { setEmail('greg@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
                 <span className="font-medium text-gray-900">Greg Williams</span>
@@ -203,7 +203,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setEmail('jordana@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                onClick={() => { setEmail('jordana@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
                 <span className="font-medium text-gray-900">Jordana Choucair</span>
@@ -211,7 +211,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setEmail('aisha@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                onClick={() => { setEmail('aisha@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
                 <span className="font-medium text-gray-900">Aisha Waheed</span>
@@ -219,7 +219,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setEmail('chris@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                onClick={() => { setEmail('chris@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
                 <span className="font-medium text-gray-900">Chris Hart</span>
@@ -227,7 +227,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setEmail('cheryl@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                onClick={() => { setEmail('cheryl@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
                 <span className="font-medium text-gray-900">Cheryl Matochik</span>
@@ -235,7 +235,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setEmail('ashley@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                onClick={() => { setEmail('ashley@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
                 <span className="font-medium text-gray-900">Ashley DeGarmo</span>
@@ -243,7 +243,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setEmail('topher@thirdhorizon.co'); setPassword('demo'); setError(''); }}
+                onClick={() => { setEmail('topher@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
                 <span className="font-medium text-gray-900">Topher Rodriguez</span>

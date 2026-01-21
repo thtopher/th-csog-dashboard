@@ -1,16 +1,32 @@
 # Third Horizon CSOG Dashboard
 
-A Third Horizon–branded, web-based control center for executive and CSOG team members to monitor firm operational health across all domains.
+A Third Horizon–branded, web-based control center for executive and CSOG team members to monitor firm operational health, aligned with the official Third Horizon Standard Operating Procedures.
+
+**Current Version:** v2.0 (January 2026) — Executive-Centric Dashboard with SOP Alignment
 
 ## Overview
 
-The dashboard aggregates KPIs from across the firm's operational domains:
-- **Growth (BD)** – Pipeline status, deals closed, win rates
-- **Service Delivery** – Engagement performance, deliverable status
-- **Contract Closure** – Closeout procedures, final billing
-- **Finance** – Receivables, book closing, financial reporting
-- **Internal Operations** – Harvest compliance, training completion
-- **Board & CSOG** – Board communications, strategic planning
+The dashboard provides an executive-centric view of firm operations:
+
+### CEO Scorecard
+Four key performance categories monitored at the firm level:
+- **Pipeline Health** — BD pipeline coverage, proposal success rates
+- **Delivery Excellence** — Client satisfaction, milestone tracking
+- **Financial Discipline** — AR aging, cash position, month-close timing
+- **Operational Efficiency** — Harvest compliance, training completion
+
+### Executive Tiles
+Each of 7 C-Suite executives has a dedicated view showing:
+- **Processes owned** — Operational processes (BD, SD, CF, etc.)
+- **Functions governed** — Governance functions (F-EOC, F-SP, F-BC, etc.)
+- **RACI Matrix** — 154 tasks with Responsible/Accountable/Consulted/Informed roles
+- **Health status** — Real-time gaps requiring attention
+
+### Key Features
+- **Hover-over Definitions** — Tooltips explain all 41 process/function codes
+- **Click-through Auditability** — See how metrics are calculated, data sources, upload attribution
+- **Executive Logins** — 7 executives can log in and upload only their assigned data types
+- **SOP-Aligned Structure** — All processes, functions, and tasks mirror the official Third Horizon SOP
 
 ## Architecture
 
@@ -45,32 +61,37 @@ The dashboard aggregates KPIs from across the firm's operational domains:
 th-csog-dashboard/
 ├── src/
 │   ├── app/                    # Next.js app router pages
-│   │   ├── api/                # API routes
+│   │   ├── api/
+│   │   │   ├── executives/     # Executive data endpoints
+│   │   │   ├── tasks/          # Task management endpoints
 │   │   │   ├── health/         # Health check endpoint
-│   │   │   ├── kpis/           # KPI data endpoints
-│   │   │   ├── annotations/    # Annotation CRUD
 │   │   │   └── data/           # Data upload endpoint
-│   │   ├── page.tsx            # Main dashboard page
+│   │   ├── executive/          # Executive detail pages
+│   │   ├── upload/             # Data upload page
+│   │   ├── login/              # Authentication page
+│   │   ├── page.tsx            # Main dashboard (CEO Scorecard + Tiles)
 │   │   └── layout.tsx          # Root layout
 │   ├── components/
-│   │   ├── common/             # Shared UI components
-│   │   ├── dashboard/          # Dashboard-specific components
-│   │   ├── domain/             # Domain detail components
-│   │   ├── layout/             # Layout components (Header, etc.)
-│   │   └── process/            # Process detail components
-│   ├── config/                 # Configuration constants
-│   ├── hooks/                  # React hooks
+│   │   ├── common/             # CodeTooltip, shared UI
+│   │   ├── dashboard/          # CEOScorecard, ExecutiveTile, ScorecardDetailModal
+│   │   ├── raci/               # RACIMatrix component
+│   │   ├── layout/             # Header, navigation
+│   │   └── process/            # KPI visualization
+│   ├── config/
+│   │   ├── executives.ts       # Executive colors, initials
+│   │   ├── processDefinitions.ts  # All 41 process/function codes
+│   │   └── uploadTypes.ts      # Upload types with executive permissions
+│   ├── contexts/               # AuthContext with executive users
 │   ├── lib/                    # Utilities and database
-│   │   ├── api/                # API client utilities
-│   │   ├── db/                 # Database connection
-│   │   └── utils/              # Helper functions
-│   └── types/                  # TypeScript type definitions
+│   └── types/                  # TypeScript definitions
 ├── database/
-│   ├── migrations/             # SQL migration files
-│   └── seeds/                  # Seed data
+│   ├── migrations/             # Schema (incl. 002_sop_alignment.sql)
+│   └── seeds/                  # Executive, process, task, RACI data
+├── docs/
+│   ├── Third_Horizon_SOP.md    # Official SOP documentation
+│   └── SOP_ALIGNMENT_ANALYSIS.md  # SOP-to-dashboard mapping
 ├── scripts/
 │   └── ingestion/              # Python data ingestion scripts
-├── docs/                       # Documentation
 └── public/                     # Static assets
 ```
 
@@ -130,36 +151,49 @@ python excel_parser.py path/to/harvest_data.xlsx --type excel_harvest --dry-run
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/health` | GET | Health check |
-| `/api/kpis/overview` | GET | All domain KPI summaries |
-| `/api/kpis/domain/[id]` | GET | Domain-specific KPIs |
+| `/api/executives` | GET | All executives with CEO scorecard |
+| `/api/executives/[id]` | GET | Executive detail with processes/functions |
+| `/api/tasks` | GET | Task data with RACI assignments |
 | `/api/kpis/process/[id]` | GET | Process-level KPI detail |
-| `/api/data/upload` | POST | Excel file upload |
-| `/api/annotations` | GET/POST | Annotation CRUD |
+| `/api/data/upload` | POST | Excel file upload with attribution |
 
 ## Key Features
 
-### Phase 1 (Current)
-- [x] Project scaffolding and architecture
-- [x] Database schema design
-- [x] API route stubs
-- [x] Core UI components
-- [x] Excel ingestion parser
-- [ ] Database integration
-- [ ] Authentication
+### Version 2.0 (Current - January 2026)
+- [x] Executive-centric dashboard architecture
+- [x] CEO Scorecard with 4 health categories
+- [x] 7 Executive tiles with process/function badges
+- [x] RACI Matrix for all 154 SOP tasks
+- [x] Hover-over tooltips for 41 process/function codes
+- [x] Click-through auditability with calculation formulas
+- [x] Executive login system with role-based permissions
+- [x] SOP documentation integrated (docs/Third_Horizon_SOP.md)
+- [x] Database seeds aligned with official SOP
+- [ ] Database integration (PostgreSQL)
+- [ ] NetSuite/Notion connectors
 
-### Phase 2 (Planned)
-- [ ] Full KPI visualizations
-- [ ] Domain drill-down views
-- [ ] Process navigation
-- [ ] Annotation system
-- [ ] Role-based access control
-
-### Phase 3 (Future)
-- [ ] NetSuite connector
-- [ ] Notion connector
-- [ ] Automated data refresh
-- [ ] Threshold alerts
+### Planned Enhancements
+- [ ] Real-time data from source systems
+- [ ] Threshold alerts for KPI deviations
 - [ ] Historical trend analysis
+- [ ] Board meeting preparation views
+- [ ] Mobile-responsive executive views
+
+## Demo Accounts
+
+The application includes 9 demo accounts for testing (password: `demo` for all):
+
+| Email | Role | Upload Access |
+|-------|------|---------------|
+| david@thirdhorizon.co | CEO | F-EOC, Strategic Planning data |
+| greg@thirdhorizon.co | President | Cash Flow data |
+| jordana@thirdhorizon.co | COO | Harvest, Training, Staffing |
+| aisha@thirdhorizon.co | CFO | AR, AP, Month-Close |
+| chris@thirdhorizon.co | CDAO | Starset, HMRF data |
+| cheryl@thirdhorizon.co | CGO | BD Pipeline |
+| ashley@thirdhorizon.co | CSO | Delivery, Contracts |
+| topher@thirdhorizon.co | Admin | All upload types |
+| demo@thirdhorizon.co | Staff | Read-only |
 
 ## Excel Templates
 

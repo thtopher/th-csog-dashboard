@@ -15,8 +15,10 @@ import {
   ChevronRight,
   Loader2,
   Info,
+  Files,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { BulkUploadModal } from '@/components/uploads';
 
 type UploadStatus = 'idle' | 'uploading' | 'validating' | 'success' | 'error';
 
@@ -46,6 +48,7 @@ export default function UploadPage() {
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [recentUploads, setRecentUploads] = useState<RecentUpload[]>([]);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   // Get available upload types based on user's role and executiveId
   const isAdmin = user?.role === 'admin';
@@ -58,32 +61,53 @@ export default function UploadPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Load recent uploads (mock data for now)
+  // Load recent uploads from database
   useEffect(() => {
     if (user) {
-      // In a real app, this would fetch from the API filtered by user
-      setRecentUploads([
-        {
-          id: '1',
-          fileName: 'harvest_compliance_2026-W03.xlsx',
-          dataType: 'Harvest Compliance',
-          uploadedBy: user.name,
-          uploadedAt: '2026-01-19T14:30:00Z',
-          status: 'success',
-          recordsProcessed: 24,
-        },
-        {
-          id: '2',
-          fileName: 'training_status_2026-01.xlsx',
-          dataType: 'Training Status',
-          uploadedBy: user.name,
-          uploadedAt: '2026-01-18T10:15:00Z',
-          status: 'success',
-          recordsProcessed: 48,
-        },
-      ]);
+      loadRecentUploads();
     }
   }, [user]);
+
+  async function loadRecentUploads() {
+    try {
+      const params = new URLSearchParams({ limit: '5' });
+      if (user?.email) {
+        params.append('email', user.email);
+      }
+
+      const response = await fetch(`/api/data/upload?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Transform API response to component format
+        const uploads: RecentUpload[] = (data.uploads || []).map((u: {
+          id: string;
+          file_name?: string;
+          fileName?: string;
+          upload_type?: string;
+          uploadType?: string;
+          uploader_name?: string;
+          uploaderName?: string;
+          uploaded_at?: string;
+          uploadedAt?: string;
+          status: string;
+          records_processed?: number;
+          recordsProcessed?: number;
+        }) => ({
+          id: u.id,
+          fileName: u.file_name || u.fileName || 'Unknown',
+          dataType: u.upload_type || u.uploadType || 'Unknown',
+          uploadedBy: u.uploader_name || u.uploaderName || user?.name || 'Unknown',
+          uploadedAt: u.uploaded_at || u.uploadedAt || new Date().toISOString(),
+          status: u.status === 'completed' ? 'success' : u.status === 'error' ? 'error' : 'warning',
+          recordsProcessed: u.records_processed || u.recordsProcessed || 0,
+        }));
+        setRecentUploads(uploads);
+      }
+    } catch (error) {
+      console.error('Failed to load recent uploads:', error);
+      setRecentUploads([]);
+    }
+  }
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -116,35 +140,64 @@ export default function UploadPage() {
 
     setUploadStatus('uploading');
 
-    // Simulate upload delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setUploadStatus('validating');
+    try {
+      // Create form data for the actual upload
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('sourceType', selectedType);
+      formData.append('uploaderEmail', user.email);
+      formData.append('uploaderName', user.name);
+      if (user.executiveId) {
+        formData.append('executiveId', user.executiveId);
+      }
 
-    // Simulate validation delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+      // Actually upload to the API
+      const response = await fetch('/api/data/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-    // Simulate result with attribution
-    setUploadResult({
-      success: true,
-      recordsProcessed: 24,
-      errors: [
-        { message: 'Row 15: hours_logged exceeds 60 hours', severity: 'warning' },
-      ],
-    });
-    setUploadStatus('success');
+      const result = await response.json();
 
-    // Add to recent uploads
-    const selectedTypeInfo = availableTypes.find(t => t.id === selectedType);
-    if (selectedTypeInfo) {
-      setRecentUploads(prev => [{
-        id: Date.now().toString(),
-        fileName: selectedFile.name,
-        dataType: selectedTypeInfo.name,
-        uploadedBy: user.name,
-        uploadedAt: new Date().toISOString(),
-        status: 'success',
-        recordsProcessed: 24,
-      }, ...prev]);
+      if (!response.ok || !result.success) {
+        setUploadResult({
+          success: false,
+          recordsProcessed: 0,
+          errors: result.errors || [{ message: 'Upload failed', severity: 'error' }],
+        });
+        setUploadStatus('error');
+        return;
+      }
+
+      // Success
+      setUploadResult({
+        success: true,
+        recordsProcessed: result.recordsProcessed,
+        errors: result.errors || [],
+      });
+      setUploadStatus('success');
+
+      // Add to recent uploads display
+      const selectedTypeInfo = availableTypes.find(t => t.id === selectedType);
+      if (selectedTypeInfo) {
+        setRecentUploads(prev => [{
+          id: result.ingestionId || Date.now().toString(),
+          fileName: selectedFile.name,
+          dataType: selectedTypeInfo.name,
+          uploadedBy: user.name,
+          uploadedAt: new Date().toISOString(),
+          status: 'success',
+          recordsProcessed: result.recordsProcessed,
+        }, ...prev]);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadResult({
+        success: false,
+        recordsProcessed: 0,
+        errors: [{ message: 'Network error during upload', severity: 'error' }],
+      });
+      setUploadStatus('error');
     }
   };
 
@@ -171,16 +224,27 @@ export default function UploadPage() {
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: 'Upload Data' }]} />
 
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Upload Data</h1>
-          <p className="mt-1 text-gray-500">
-            Upload Excel files to update dashboard KPIs
-          </p>
-          {user?.title && (
-            <p className="mt-2 text-sm text-blue-600">
-              Logged in as {user.name} ({user.title})
-              {isAdmin && ' - Admin access: all upload types available'}
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Upload Data</h1>
+            <p className="mt-1 text-gray-500">
+              Upload Excel files to update dashboard KPIs
             </p>
+            {user?.title && (
+              <p className="mt-2 text-sm text-blue-600">
+                Logged in as {user.name} ({user.title})
+                {isAdmin && ' - Admin access: all upload types available'}
+              </p>
+            )}
+          </div>
+          {availableTypes.length > 0 && (
+            <button
+              onClick={() => setShowBulkUpload(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+            >
+              <Files size={16} />
+              Bulk Upload
+            </button>
           )}
         </div>
 
@@ -441,6 +505,17 @@ export default function UploadPage() {
           </div>
         )}
       </main>
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        availableTypes={availableTypes}
+        uploaderEmail={user?.email || ''}
+        uploaderName={user?.name || ''}
+        executiveId={user?.executiveId}
+        onUploadComplete={loadRecentUploads}
+      />
     </div>
   );
 }

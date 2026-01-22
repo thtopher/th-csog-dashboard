@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Calculator, Database, Clock, User } from 'lucide-react';
+import { X, Calculator, Database, Clock, User, Eye, Download, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { SourceTooltip } from '@/components/common/CodeTooltip';
+import { SpreadsheetViewer } from '@/components/uploads';
 import type { AuditMetadata } from '@/types';
 
 interface MetricDisplay {
@@ -32,10 +34,34 @@ export function ScorecardDetailModal({
   metrics,
   audit,
 }: ScorecardDetailModalProps) {
+  const [viewingUpload, setViewingUpload] = useState<{
+    uploadId: string;
+    fileName: string;
+    uploaderName?: string;
+    uploadedAt?: string;
+  } | null>(null);
+
   const statusColors = {
     healthy: 'bg-green-100 text-green-800',
     warning: 'bg-amber-100 text-amber-800',
     critical: 'bg-red-100 text-red-800',
+  };
+
+  const handleDownload = async (uploadId: string, fileName: string) => {
+    try {
+      const response = await fetch(`/api/uploads/${uploadId}?action=download`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download error:', err);
+    }
   };
 
   return (
@@ -120,23 +146,52 @@ export function ScorecardDetailModal({
                     Data Sources & Attribution
                   </h3>
                   <div className="space-y-2">
-                    {audit.dataSources.map((source, i) => (
+                    {audit.dataSources.map((dataSource, i) => (
                       <div key={i} className="rounded-lg border p-3">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900">{source.name}</p>
-                          {source.recordCount && (
-                            <span className="text-xs text-gray-400">{source.recordCount} records</span>
+                          <div className="flex items-center gap-2">
+                            <FileSpreadsheet size={16} className="text-green-600" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{dataSource.name}</p>
+                              {dataSource.fileName && (
+                                <p className="text-xs text-gray-500">{dataSource.fileName}</p>
+                              )}
+                            </div>
+                          </div>
+                          {dataSource.uploadId && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setViewingUpload({
+                                  uploadId: dataSource.uploadId!,
+                                  fileName: dataSource.fileName || dataSource.name,
+                                  uploaderName: dataSource.uploadedBy,
+                                  uploadedAt: dataSource.lastUpdated,
+                                })}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="View spreadsheet"
+                              >
+                                <Eye size={14} />
+                                View
+                              </button>
+                              <button
+                                onClick={() => handleDownload(dataSource.uploadId!, dataSource.fileName || 'download.xlsx')}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                title="Download file"
+                              >
+                                <Download size={14} />
+                              </button>
+                            </div>
                           )}
                         </div>
                         <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <Clock size={12} />
-                            Updated {new Date(source.lastUpdated).toLocaleDateString()}
+                            Updated {new Date(dataSource.lastUpdated).toLocaleDateString()}
                           </span>
-                          {source.uploadedBy && (
+                          {dataSource.uploadedBy && (
                             <span className="flex items-center gap-1">
                               <User size={12} />
-                              {source.uploadedBy}
+                              {dataSource.uploadedBy}
                             </span>
                           )}
                         </div>
@@ -170,6 +225,18 @@ export function ScorecardDetailModal({
           </div>
         </Dialog.Content>
       </Dialog.Portal>
+
+      {/* Spreadsheet Viewer */}
+      {viewingUpload && (
+        <SpreadsheetViewer
+          uploadId={viewingUpload.uploadId}
+          fileName={viewingUpload.fileName}
+          uploadType={title}
+          uploaderName={viewingUpload.uploaderName || 'System'}
+          uploadedAt={viewingUpload.uploadedAt || new Date().toISOString()}
+          onClose={() => setViewingUpload(null)}
+        />
+      )}
     </Dialog.Root>
   );
 }

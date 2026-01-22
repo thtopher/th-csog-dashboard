@@ -15,7 +15,7 @@ export const EXECUTIVE_COLORS: Record<string, string> = {
 } as const;
 
 /**
- * Executive initials for avatars
+ * Executive initials for avatars (fallback when no photo)
  */
 export const EXECUTIVE_INITIALS: Record<string, string> = {
   'exec-ceo': 'DS',
@@ -25,6 +25,27 @@ export const EXECUTIVE_INITIALS: Record<string, string> = {
   'exec-cdao': 'CH',
   'exec-cgo': 'CM',
   'exec-cso': 'AD',
+} as const;
+
+/**
+ * Executive headshot photos
+ * Photos are stored in /public/headshots/
+ */
+export const EXECUTIVE_PHOTOS: Record<string, string> = {
+  'exec-ceo': '/headshots/DavidSmith.jpeg',
+  'exec-president': '/headshots/GregWilliams.jpeg',
+  'exec-coo': '/headshots/JordanaChoucair.jpeg',
+  'exec-cfo': '/headshots/AishaWaheed.png',
+  'exec-cdao': '/headshots/ChrisHart.jpeg',
+  'exec-cgo': '/headshots/CherylMatochik.jpeg',
+  'exec-cso': '/headshots/AshleyDeGarmo.png',
+} as const;
+
+/**
+ * User photos (for non-executive users)
+ */
+export const USER_PHOTOS: Record<string, string> = {
+  'topher@thirdhorizon.com': '/headshots/TopherRasmussen.jpeg',
 } as const;
 
 /**

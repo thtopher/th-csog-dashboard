@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { cn } from '@/lib/utils/cn';
@@ -9,11 +10,9 @@ import {
   Bell,
   Palette,
   Link as LinkIcon,
-  Plus,
-  Edit2,
-  Trash2,
-  Check,
+  GraduationCap,
 } from 'lucide-react';
+import Link from 'next/link';
 import type { UserRole } from '@/types';
 
 const TABS = [
@@ -21,20 +20,28 @@ const TABS = [
   { id: 'integrations', label: 'Integrations', icon: LinkIcon },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'onboarding', label: 'Onboarding', icon: GraduationCap },
 ];
 
-const MOCK_USERS = [
-  { id: '1', name: 'Cheryl Robinson', email: 'cheryl@thirdhorizon.com', role: 'csog_member' as UserRole, lastLogin: '2024-12-29' },
-  { id: '2', name: 'Jordana Smith', email: 'jordana@thirdhorizon.com', role: 'steward' as UserRole, lastLogin: '2024-12-29' },
-  { id: '3', name: 'Topher Rodriguez', email: 'topher@thirdhorizon.com', role: 'admin' as UserRole, lastLogin: '2024-12-29' },
-  { id: '4', name: 'Alex Chen', email: 'alex@thirdhorizon.com', role: 'staff' as UserRole, lastLogin: '2024-12-27' },
+// These users are synced from Microsoft Entra ID via SSO
+// In demo mode, these are the available demo accounts
+const DEMO_USERS = [
+  { id: 'exec-ceo', name: 'David Smith', email: 'david@thirdhorizon.com', role: 'admin' as UserRole, title: 'CEO' },
+  { id: 'exec-president', name: 'Greg Williams', email: 'greg@thirdhorizon.com', role: 'csog_member' as UserRole, title: 'President' },
+  { id: 'exec-coo', name: 'Jordana Choucair', email: 'jordana@thirdhorizon.com', role: 'csog_member' as UserRole, title: 'COO' },
+  { id: 'exec-cfo', name: 'Aisha Waheed', email: 'aisha@thirdhorizon.com', role: 'csog_member' as UserRole, title: 'CFO' },
+  { id: 'exec-cdao', name: 'Chris Hart', email: 'chris@thirdhorizon.com', role: 'csog_member' as UserRole, title: 'CDAO' },
+  { id: 'exec-cgo', name: 'Cheryl Matochik', email: 'cheryl@thirdhorizon.com', role: 'csog_member' as UserRole, title: 'CGO' },
+  { id: 'exec-cso', name: 'Ashley DeGarmo', email: 'ashley@thirdhorizon.com', role: 'csog_member' as UserRole, title: 'CSO' },
+  { id: 'admin', name: 'Topher Rasmussen', email: 'topher@thirdhorizon.com', role: 'admin' as UserRole, title: 'System Administrator' },
 ];
 
-const MOCK_INTEGRATIONS = [
-  { id: 'netsuite', name: 'NetSuite', description: 'Financial data and project accounting', status: 'not_configured', icon: '📊' },
-  { id: 'notion', name: 'Notion', description: 'BD pipeline and opportunity tracking', status: 'not_configured', icon: '📝' },
-  { id: 'harvest', name: 'Harvest', description: 'Time tracking (via Excel export)', status: 'configured', icon: '⏱️' },
-  { id: 'slack', name: 'Slack', description: 'Notifications and alerts', status: 'not_configured', icon: '💬' },
+// Planned integrations - these are not yet implemented
+const PLANNED_INTEGRATIONS = [
+  { id: 'netsuite', name: 'NetSuite', description: 'Financial data and project accounting', status: 'planned', icon: '📊' },
+  { id: 'notion', name: 'Notion', description: 'BD pipeline and opportunity tracking', status: 'planned', icon: '📝' },
+  { id: 'harvest', name: 'Harvest', description: 'Time tracking (currently via Excel upload)', status: 'manual', icon: '⏱️' },
+  { id: 'slack', name: 'Slack', description: 'Notifications and alerts', status: 'planned', icon: '💬' },
 ];
 
 export default function SettingsPage() {
@@ -83,6 +90,7 @@ export default function SettingsPage() {
             {activeTab === 'integrations' && <IntegrationsSettings />}
             {activeTab === 'notifications' && <NotificationsSettings />}
             {activeTab === 'appearance' && <AppearanceSettings />}
+            {activeTab === 'onboarding' && <OnboardingSettings />}
           </div>
         </div>
       </main>
@@ -96,12 +104,15 @@ function UsersSettings() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Users</h2>
-          <p className="text-sm text-gray-500">Manage user access and roles</p>
+          <p className="text-sm text-gray-500">Users are managed via Microsoft Entra ID (SSO)</p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          <Plus size={16} />
-          Add User
-        </button>
+      </div>
+
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Demo Mode:</strong> In production, users authenticate via Microsoft SSO and are automatically assigned roles based on their email.
+          The users below are available for demo login (password: &quot;demo&quot;).
+        </p>
       </div>
 
       <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
@@ -112,18 +123,15 @@ function UsersSettings() {
                 User
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
+                Title
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Last Login
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                Role
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {MOCK_USERS.map(user => (
+            {DEMO_USERS.map(user => (
               <tr key={user.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
@@ -131,19 +139,11 @@ function UsersSettings() {
                     <div className="text-sm text-gray-500">{user.email}</div>
                   </div>
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {user.title}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <RoleBadge role={user.role} />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(user.lastLogin).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-gray-400 hover:text-gray-600 mr-3">
-                    <Edit2 size={16} />
-                  </button>
-                  <button className="text-gray-400 hover:text-red-600">
-                    <Trash2 size={16} />
-                  </button>
                 </td>
               </tr>
             ))}
@@ -181,11 +181,18 @@ function IntegrationsSettings() {
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Integrations</h2>
-        <p className="text-sm text-gray-500">Connect external data sources</p>
+        <p className="text-sm text-gray-500">External data source connections</p>
+      </div>
+
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <p className="text-sm text-amber-800">
+          <strong>Coming Soon:</strong> Direct API integrations are planned for future releases.
+          Currently, data is imported via Excel file uploads on the Upload page.
+        </p>
       </div>
 
       <div className="space-y-4">
-        {MOCK_INTEGRATIONS.map(integration => (
+        {PLANNED_INTEGRATIONS.map(integration => (
           <div key={integration.id} className="rounded-lg border bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4">
@@ -196,20 +203,14 @@ function IntegrationsSettings() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {integration.status === 'configured' ? (
-                  <>
-                    <span className="inline-flex items-center gap-1 text-sm text-green-600">
-                      <Check size={14} />
-                      Connected
-                    </span>
-                    <button className="text-sm text-gray-500 hover:text-gray-700">
-                      Configure
-                    </button>
-                  </>
+                {integration.status === 'manual' ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                    Via Excel Upload
+                  </span>
                 ) : (
-                  <button className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    Connect
-                  </button>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                    Planned
+                  </span>
                 )}
               </div>
             </div>
@@ -219,9 +220,9 @@ function IntegrationsSettings() {
 
       <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
         <p className="text-gray-600 mb-2">Need a different integration?</p>
-        <a href="#" className="text-sm text-blue-600 hover:text-blue-800">
-          Request a new integration →
-        </a>
+        <p className="text-sm text-gray-500">
+          Contact Topher to discuss additional data source requirements.
+        </p>
       </div>
     </div>
   );
@@ -316,16 +317,63 @@ function AppearanceSettings() {
       <div className="rounded-lg border bg-white p-6 shadow-sm">
         <h3 className="font-medium text-gray-900 mb-4">Logo</h3>
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gray-900">
-            <span className="text-2xl font-bold text-white">TH</span>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Third Horizon Logo"
+            width={64}
+            height={64}
+          />
           <div>
-            <p className="text-sm text-gray-600">Current: Text logo "TH"</p>
+            <p className="text-sm text-gray-600">Current: Third Horizon logo</p>
             <button className="text-sm text-blue-600 hover:text-blue-800 mt-1">
               Upload custom logo →
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function OnboardingSettings() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Onboarding</h2>
+        <p className="text-sm text-gray-500">View or restart the onboarding experience</p>
+      </div>
+
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <h3 className="font-medium text-gray-900 mb-2">New User Onboarding</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          The onboarding flow guides new users through understanding the dashboard,
+          identifying their required data uploads, and submitting their first data files.
+        </p>
+        <Link
+          href="/onboarding"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <GraduationCap size={16} />
+          Start Onboarding Flow
+        </Link>
+      </div>
+
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <h3 className="font-medium text-gray-900 mb-2">Onboarding Steps</h3>
+        <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+          <li><strong>Welcome</strong> — Introduction to the dashboard and its purpose</li>
+          <li><strong>Checklist</strong> — Review required data uploads for your role</li>
+          <li><strong>First Upload</strong> — Guided walkthrough of uploading your first data file</li>
+          <li><strong>Baseline Data</strong> — Request for historical data (last 3 months)</li>
+          <li><strong>Complete</strong> — Confirmation and next steps</li>
+        </ol>
+      </div>
+
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Tip:</strong> In demo mode, you can experience the onboarding flow by clicking
+          the button above. Your progress is saved and you can return to the dashboard at any time.
+        </p>
       </div>
     </div>
   );

@@ -394,6 +394,7 @@ export interface UploadResponse {
   success: boolean;
   ingestionId: string;
   recordsProcessed: number;
+  metricsCalculated?: number;
   errors?: ValidationError[];
 }
 
@@ -436,6 +437,8 @@ export interface DataSourceInfo {
   uploadedByEmail?: string;
   executiveId?: string;
   recordCount?: number;
+  uploadId?: string;
+  fileName?: string;
 }
 
 export interface AuditMetadata {
@@ -454,5 +457,225 @@ export interface CEOScorecardWithAudit extends CEOScorecard {
     cash: AuditMetadata;
     staffingCapacity: AuditMetadata;
     strategicInitiatives: AuditMetadata;
+  };
+}
+
+// ============================================
+// ONBOARDING TYPES
+// ============================================
+
+export type OnboardingStep = 'welcome' | 'checklist' | 'upload' | 'baseline' | 'complete';
+
+export interface OnboardingState {
+  id: string;
+  userEmail: string;
+  executiveId?: string;
+  currentStep: number;
+  stepsCompleted: OnboardingStep[];
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface OnboardingProgress {
+  step: number;
+  totalSteps: number;
+  currentStepName: OnboardingStep;
+  isComplete: boolean;
+  percentComplete: number;
+}
+
+// ============================================
+// TEMPORAL TYPES
+// ============================================
+
+export interface MonthInfo {
+  start: Date;
+  end: Date;
+  name: string;
+  dayNumber: number;
+  totalDays: number;
+}
+
+export interface QuarterInfo {
+  start: Date;
+  end: Date;
+  number: number;
+  fiscalYear: number;
+}
+
+export interface WeekInfo {
+  start: Date;
+  end: Date;
+  number: number;
+}
+
+export interface DaysRemaining {
+  inMonth: number;
+  inQuarter: number;
+  inWeek: number;
+}
+
+export interface ReportingDeadline {
+  type: 'week' | 'month' | 'quarter';
+  name: string;
+  dueDate: Date;
+  daysUntilDue: number;
+  isOverdue: boolean;
+}
+
+export interface ReportingPeriod {
+  id: string;
+  periodType: 'week' | 'biweek' | 'month' | 'quarter';
+  name: string;
+  startDate: string;
+  endDate: string;
+  dueDate: string;
+  fiscalYear: number;
+  fiscalQuarter?: number;
+  isActive: boolean;
+}
+
+// ============================================
+// SMART UPLOAD TYPES
+// ============================================
+
+export interface ColumnMapping {
+  sourceColumn: string;
+  targetColumn: string;
+  confidence: number;
+  isManual: boolean;
+}
+
+export interface MappingResult {
+  mappings: ColumnMapping[];
+  unmappedSource: string[];
+  unmappedTarget: string[];
+  overallConfidence: number;
+}
+
+export interface ParsedRow {
+  rowNumber: number;
+  data: Record<string, unknown>;
+}
+
+export interface ParseResult {
+  headers: string[];
+  rows: ParsedRow[];
+  sheetName: string;
+  totalRows: number;
+}
+
+export interface UploadPreviewData {
+  success: boolean;
+  headers: string[];
+  mappings: ColumnMapping[];
+  sampleRows: ParsedRow[];
+  totalRows: number;
+  validation: {
+    isValid: boolean;
+    errors: ValidationError[];
+    warnings: ValidationError[];
+    validRowCount: number;
+    invalidRowCount: number;
+  };
+  overallConfidence: number;
+}
+
+export interface UploadHistoryItem {
+  id: string;
+  uploadType: string;
+  fileName: string;
+  fileSize: number;
+  uploaderEmail: string;
+  uploaderName: string;
+  executiveId?: string;
+  periodType: string;
+  periodStart: string;
+  periodEnd: string;
+  recordsProcessed: number;
+  recordsCreated: number;
+  recordsUpdated: number;
+  recordsSkipped: number;
+  validationErrors?: ValidationError[];
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  uploadedAt: string;
+  processedAt?: string;
+}
+
+export interface RequiredUpload {
+  id: string;
+  executiveId: string;
+  uploadType: string;
+  periodId: string;
+  isRequired: boolean;
+  isCompleted: boolean;
+  completedAt?: string;
+  completedBy?: string;
+  uploadId?: string;
+}
+
+export interface UploadCompliance {
+  executiveId: string;
+  executiveName: string;
+  title: string;
+  totalRequired: number;
+  totalCompleted: number;
+  pendingUploads: string[];
+  lastUpload?: string;
+}
+
+// ============================================
+// OPERATING RHYTHM / UPLOAD TRACKING TYPES
+// ============================================
+
+export type UploadCadence = 'weekly' | 'monthly' | 'quarterly';
+
+export type UploadStatus = 'completed' | 'pending' | 'overdue' | 'upcoming';
+
+export interface UploadScheduleItem {
+  uploadTypeId: string;
+  uploadTypeName: string;
+  executiveId: string;
+  cadence: UploadCadence;
+  daysAfterPeriodEnd: number; // Grace period before due
+}
+
+export interface UploadStatusItem {
+  uploadTypeId: string;
+  uploadTypeName: string;
+  executiveId: string;
+  dueDate: string;
+  status: UploadStatus;
+  completedAt?: string;
+}
+
+export interface ThermometerData {
+  executiveId: string;
+  executiveName: string;
+  title: string;
+  photoUrl?: string;
+  totalRequired: number;
+  totalCompleted: number;
+  percentComplete: number;
+  uploads: UploadStatusItem[];
+}
+
+export interface CalendarEvent {
+  date: string;
+  executiveId: string;
+  executiveName: string;
+  uploadTypeId: string;
+  uploadTypeName: string;
+  status: UploadStatus;
+  cadence: UploadCadence;
+}
+
+export interface UploadComplianceResponse {
+  thermometers: ThermometerData[];
+  calendarEvents: CalendarEvent[];
+  summary: {
+    totalRequired: number;
+    totalCompleted: number;
+    overdueCount: number;
   };
 }

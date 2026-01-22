@@ -1,7 +1,9 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 
 interface User {
   id: string;
@@ -17,11 +19,16 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithMicrosoft: () => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  isDemoMode: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Check if we're in demo mode (no Azure AD configured)
+const IS_DEMO_MODE = !process.env.NEXT_PUBLIC_AZURE_AD_CLIENT_ID;
 
 // Mock users for demo - includes all 7 executives plus admin
 const MOCK_USERS: Record<string, User & { password: string }> = {
@@ -93,7 +100,7 @@ const MOCK_USERS: Record<string, User & { password: string }> = {
   'topher@thirdhorizon.com': {
     id: 'user-admin',
     email: 'topher@thirdhorizon.com',
-    name: 'Topher Rodriguez',
+    name: 'Topher Rasmussen',
     role: 'admin',
     title: 'System Administrator',
     password: 'demo',
@@ -109,51 +116,112 @@ const MOCK_USERS: Record<string, User & { password: string }> = {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const [demoUser, setDemoUser] = useState<User | null>(null);
+  const [isUsingDemo, setIsUsingDemo] = useState(false);
   const router = useRouter();
 
-  // Check for existing session on mount
+  // Check for existing demo session on mount
   useEffect(() => {
-    const stored = localStorage.getItem('th_dashboard_user');
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch {
-        localStorage.removeItem('th_dashboard_user');
+    if (IS_DEMO_MODE) {
+      const stored = localStorage.getItem('th_dashboard_user');
+      if (stored) {
+        try {
+          setDemoUser(JSON.parse(stored));
+          setIsUsingDemo(true);
+        } catch {
+          localStorage.removeItem('th_dashboard_user');
+        }
       }
     }
-    setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const normalizedEmail = email.toLowerCase().trim();
-    const mockUser = MOCK_USERS[normalizedEmail];
-
-    if (!mockUser) {
-      return { success: false, error: 'No account found with this email' };
+  // Derive user from session or demo mode
+  const user: User | null = (() => {
+    // If using demo mode with local user
+    if (isUsingDemo && demoUser) {
+      return demoUser;
     }
 
-    if (mockUser.password !== password) {
-      return { success: false, error: 'Incorrect password' };
+    // If using NextAuth session
+    if (session?.user) {
+      return {
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name,
+        role: (session.user.role as User['role']) || 'staff',
+        executiveId: session.user.executiveId,
+        title: session.user.title,
+        avatar: session.user.image,
+      };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...userWithoutPassword } = mockUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem('th_dashboard_user', JSON.stringify(userWithoutPassword));
+    return null;
+  })();
 
-    return { success: true };
-  };
+  const isLoading = status === 'loading' && !isUsingDemo;
+  const isAuthenticated = !!user;
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('th_dashboard_user');
-    router.push('/login');
-  };
+  // Demo login function
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    // In demo mode, use local auth
+    if (IS_DEMO_MODE) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const normalizedEmail = email.toLowerCase().trim();
+      const mockUser = MOCK_USERS[normalizedEmail];
+
+      if (!mockUser) {
+        return { success: false, error: 'No account found with this email' };
+      }
+
+      if (mockUser.password !== password) {
+        return { success: false, error: 'Incorrect password' };
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...userWithoutPassword } = mockUser;
+      setDemoUser(userWithoutPassword);
+      setIsUsingDemo(true);
+      localStorage.setItem('th_dashboard_user', JSON.stringify(userWithoutPassword));
+
+      return { success: true };
+    }
+
+    // In production mode, use NextAuth credentials provider
+    try {
+      const result = await nextAuthSignIn('demo-login', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        return { success: false, error: 'Invalid credentials' };
+      }
+
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Login failed' };
+    }
+  }, []);
+
+  // Microsoft SSO login
+  const loginWithMicrosoft = useCallback(async () => {
+    await nextAuthSignIn('microsoft-entra-id', { callbackUrl: '/' });
+  }, []);
+
+  // Logout function
+  const logout = useCallback(() => {
+    if (isUsingDemo) {
+      setDemoUser(null);
+      setIsUsingDemo(false);
+      localStorage.removeItem('th_dashboard_user');
+      router.push('/login');
+    } else {
+      nextAuthSignOut({ callbackUrl: '/login' });
+    }
+  }, [isUsingDemo, router]);
 
   return (
     <AuthContext.Provider
@@ -161,8 +229,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         login,
+        loginWithMicrosoft,
         logout,
-        isAuthenticated: !!user,
+        isAuthenticated,
+        isDemoMode: IS_DEMO_MODE || isUsingDemo,
       }}
     >
       {children}

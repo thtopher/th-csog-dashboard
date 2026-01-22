@@ -314,8 +314,16 @@ function ScorecardCard({ title, icon: Icon, status, metrics, source, onClick }: 
   };
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
       className={cn(
         'rounded-lg border-2 p-4 text-left transition-all cursor-pointer w-full',
         statusColors[status]
@@ -355,7 +363,7 @@ function ScorecardCard({ title, icon: Icon, status, metrics, source, onClick }: 
       <div className="mt-3 pt-2 border-t border-gray-200">
         <span className="text-xs text-gray-400">Source: <SourceTooltip source={source} /></span>
       </div>
-    </button>
+    </div>
   );
 }
 

@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
 import type { ExecutiveSummary, HealthStatus } from '@/types';
-import { EXECUTIVE_COLORS, EXECUTIVE_INITIALS } from '@/config/executives';
 import { CodeTooltip } from '@/components/common/CodeTooltip';
+import { Avatar } from '@/components/common/Avatar';
 import {
   ChevronRight,
   Briefcase,
@@ -17,9 +17,6 @@ interface ExecutiveTileProps {
 }
 
 export function ExecutiveTile({ executive }: ExecutiveTileProps) {
-  const color = EXECUTIVE_COLORS[executive.id] || '#6b7280';
-  const initials = EXECUTIVE_INITIALS[executive.id] || '??';
-
   const statusColors: Record<HealthStatus, string> = {
     healthy: 'bg-green-100 text-green-700 border-green-200',
     warning: 'bg-amber-100 text-amber-700 border-amber-200',
@@ -39,24 +36,25 @@ export function ExecutiveTile({ executive }: ExecutiveTileProps) {
     >
       {/* Executive Info */}
       <div className="flex items-start gap-3 mb-4">
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-full text-white font-bold shrink-0"
-          style={{ backgroundColor: color }}
-        >
-          {initials}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate">{executive.name}</h3>
+        <Avatar
+          executiveId={executive.id}
+          name={executive.name}
+          size="lg"
+        />
+        <div className="flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-semibold text-gray-900">{executive.name}</h3>
+            <div
+              className={cn(
+                'px-2 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap shrink-0',
+                statusColors[executive.overallStatus]
+              )}
+            >
+              {statusLabels[executive.overallStatus]}
+            </div>
+          </div>
           <p className="text-sm text-gray-500">{executive.title}</p>
           <p className="text-xs text-gray-400">{executive.role}</p>
-        </div>
-        <div
-          className={cn(
-            'px-2 py-1 rounded-full text-xs font-medium border',
-            statusColors[executive.overallStatus]
-          )}
-        >
-          {statusLabels[executive.overallStatus]}
         </div>
       </div>
 

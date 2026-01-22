@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { CEOScorecard } from '@/components/dashboard/CEOScorecard';
@@ -11,7 +11,7 @@ import type { ExecutiveOverviewResponse, PeriodType } from '@/types';
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   const [data, setData] = useState<ExecutiveOverviewResponse | null>(null);
@@ -20,22 +20,11 @@ export default function DashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('week');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [authLoading, isAuthenticated, router]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchData();
-    }
-  }, [isAuthenticated, selectedPeriod]);
-
-  async function fetchData() {
+  const fetchData = useCallback(async (skipLoadingState = false) => {
     try {
-      setIsLoading(true);
-      const res = await fetch(`/api/executives?periodType=${selectedPeriod}`);
+      if (!skipLoadingState) setIsLoading(true);
+      // Cache-busting for fresh data
+      const res = await fetch(`/api/executives?periodType=${selectedPeriod}&_t=${Date.now()}`);
       if (!res.ok) throw new Error('Failed to fetch data');
       const json = await res.json();
       setData(json);
@@ -45,7 +34,61 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [selectedPeriod]);
+
+  // Role-based routing
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (!authLoading && isAuthenticated && user) {
+      // Non-CEO executives go to their own page
+      if (user.executiveId && user.executiveId !== 'exec-ceo') {
+        router.push(`/executive/${user.executiveId}`);
+        return;
+      }
+
+      // Non-executive admins (like Topher) go to admin page
+      if (user.role === 'admin' && !user.executiveId) {
+        router.push('/admin');
+        return;
+      }
+
+      // CEO stays on main dashboard (this page)
+      // Staff/viewers also stay here for read-only view
+    }
+  }, [authLoading, isAuthenticated, user, router]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated, fetchData]);
+
+  // Refetch when page becomes visible (user returns from upload page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isAuthenticated) {
+        fetchData(true); // Background refresh
+      }
+    };
+
+    const handleFocus = () => {
+      if (isAuthenticated) {
+        fetchData(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchData, isAuthenticated]);
 
   async function handleRefresh() {
     setIsRefreshing(true);
@@ -62,6 +105,24 @@ export default function DashboardPage() {
   }
 
   if (!isAuthenticated) return null;
+
+  // Show loading while redirecting non-CEO executives
+  if (user?.executiveId && user.executiveId !== 'exec-ceo') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  // Show loading while redirecting non-executive admins
+  if (user?.role === 'admin' && !user?.executiveId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

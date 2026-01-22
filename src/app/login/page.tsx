@@ -2,9 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+
+// Microsoft logo SVG component
+function MicrosoftLogo({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11 0H0V11H11V0Z" fill="#F25022"/>
+      <path d="M23 0H12V11H23V0Z" fill="#7FBA00"/>
+      <path d="M11 12H0V23H11V12Z" fill="#00A4EF"/>
+      <path d="M23 12H12V23H23V12Z" fill="#FFB900"/>
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -12,8 +25,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMicrosoftLoading, setIsMicrosoftLoading] = useState(false);
 
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, loginWithMicrosoft, isAuthenticated, isLoading, isDemoMode } = useAuth();
   const router = useRouter();
 
   // Redirect if already logged in
@@ -38,6 +52,17 @@ export default function LoginPage() {
     }
   };
 
+  const handleMicrosoftLogin = async () => {
+    setError('');
+    setIsMicrosoftLoading(true);
+    try {
+      await loginWithMicrosoft();
+    } catch {
+      setError('Microsoft login failed. Please try again.');
+      setIsMicrosoftLoading(false);
+    }
+  };
+
   const fillDemoCredentials = () => {
     setEmail('demo@thirdhorizon.com');
     setPassword('demo');
@@ -59,8 +84,13 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Logo & Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-900 mb-6">
-              <span className="text-2xl font-bold text-white">TH</span>
+            <div className="inline-block mb-6">
+              <Image
+                src="/logo.png"
+                alt="Third Horizon Logo"
+                width={64}
+                height={64}
+              />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Third Horizon</h1>
             <p className="text-gray-500 mt-1">CSOG Dashboard</p>
@@ -68,6 +98,40 @@ export default function LoginPage() {
 
           {/* Login Form */}
           <div className="bg-white rounded-xl shadow-sm border p-8">
+            {/* Microsoft SSO Button - Primary option when not in demo mode */}
+            {!isDemoMode && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleMicrosoftLogin}
+                  disabled={isMicrosoftLoading}
+                  className={cn(
+                    'w-full flex items-center justify-center gap-3 rounded-lg border-2 border-gray-200 px-4 py-3 text-sm font-medium text-gray-700',
+                    'hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+                    'transition-colors',
+                    'disabled:opacity-50 disabled:cursor-not-allowed'
+                  )}
+                >
+                  {isMicrosoftLoading ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <MicrosoftLogo className="h-5 w-5" />
+                  )}
+                  Sign in with Microsoft
+                </button>
+
+                {/* Divider */}
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">or continue with email</span>
+                  </div>
+                </div>
+              </>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email */}
               <div>
@@ -152,7 +216,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Divider */}
+            {/* Demo Mode Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200" />
@@ -177,7 +241,7 @@ export default function LoginPage() {
 
             {/* Demo Hint */}
             <p className="mt-4 text-center text-xs text-gray-400">
-              Hint: any email above with password "demo"
+              Hint: any email above with password &quot;demo&quot;
             </p>
           </div>
 
@@ -246,7 +310,7 @@ export default function LoginPage() {
                 onClick={() => { setEmail('topher@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
-                <span className="font-medium text-gray-900">Topher Rodriguez</span>
+                <span className="font-medium text-gray-900">Topher Rasmussen</span>
                 <span className="text-gray-500 block">Admin</span>
               </button>
             </div>

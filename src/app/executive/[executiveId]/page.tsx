@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
-import { RACIMatrix, RACILegend } from '@/components/raci/RACIMatrix';
+import { RACIMatrix } from '@/components/raci/RACIMatrix';
 import { CodeTooltip } from '@/components/common/CodeTooltip';
+import { ExecutiveUploadStatus } from '@/components/dashboard/ExecutiveUploadStatus';
+import { ExecutiveScorecard } from '@/components/dashboard/ExecutiveScorecard';
 import { useAuth } from '@/contexts/AuthContext';
-import { EXECUTIVE_COLORS, EXECUTIVE_INITIALS } from '@/config/executives';
+import { Avatar } from '@/components/common/Avatar';
 import type { ExecutiveDetailResponse, ProcessWithTasks, HealthStatus } from '@/types';
 
 // Extended type to include status from API
@@ -35,6 +37,22 @@ export default function ExecutiveDetailPage() {
   const [error, setError] = useState<Error | null>(null);
   const [expandedProcess, setExpandedProcess] = useState<string | null>(null);
 
+  const fetchData = useCallback(async (skipLoadingState = false) => {
+    try {
+      if (!skipLoadingState) setIsLoading(true);
+      // Add cache-busting for fresh data
+      const res = await fetch(`/api/executives/${executiveId}?_t=${Date.now()}`);
+      if (!res.ok) throw new Error('Executive not found');
+      const json = await res.json();
+      setData(json);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [executiveId]);
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login');
@@ -45,22 +63,30 @@ export default function ExecutiveDetailPage() {
     if (isAuthenticated && executiveId) {
       fetchData();
     }
-  }, [isAuthenticated, executiveId]);
+  }, [isAuthenticated, executiveId, fetchData]);
 
-  async function fetchData() {
-    try {
-      setIsLoading(true);
-      const res = await fetch(`/api/executives/${executiveId}`);
-      if (!res.ok) throw new Error('Executive not found');
-      const json = await res.json();
-      setData(json);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  // Refetch when page becomes visible (user returns from upload page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isAuthenticated && executiveId) {
+        fetchData(true); // Skip loading state for background refresh
+      }
+    };
+
+    const handleFocus = () => {
+      if (isAuthenticated && executiveId) {
+        fetchData(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchData, isAuthenticated, executiveId]);
 
   if (authLoading || isLoading) {
     return (
@@ -89,8 +115,6 @@ export default function ExecutiveDetailPage() {
   }
 
   const { executive, processes, functions } = data;
-  const color = EXECUTIVE_COLORS[executive.id] || '#6b7280';
-  const initials = EXECUTIVE_INITIALS[executive.id] || '??';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -108,12 +132,11 @@ export default function ExecutiveDetailPage() {
 
         {/* Executive Header */}
         <div className="mb-8 flex items-start gap-4">
-          <div
-            className="flex h-16 w-16 items-center justify-center rounded-full text-white text-xl font-bold shrink-0"
-            style={{ backgroundColor: color }}
-          >
-            {initials}
-          </div>
+          <Avatar
+            executiveId={executive.id}
+            name={executive.name}
+            size="xl"
+          />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{executive.name}</h1>
             <p className="text-lg text-gray-600">{executive.title}</p>
@@ -137,9 +160,14 @@ export default function ExecutiveDetailPage() {
           </div>
         </div>
 
-        {/* RACI Legend */}
-        <div className="mb-6 p-4 bg-white rounded-lg border">
-          <RACILegend />
+        {/* Executive Scorecard */}
+        <div className="mb-6">
+          <ExecutiveScorecard executiveId={executiveId} />
+        </div>
+
+        {/* Upload Status */}
+        <div className="mb-6">
+          <ExecutiveUploadStatus executiveId={executiveId} />
         </div>
 
         {/* Processes Section */}

@@ -1,6 +1,115 @@
 import { NextResponse } from 'next/server';
 import type { ExecutiveOverviewResponse, ExecutiveSummary, CEOScorecardWithAudit, HealthStatus, ProcessSummary, AuditMetadata } from '@/types';
 import { DEFAULT_EXECUTIVES } from '@/config/executives';
+import { createClient } from '@supabase/supabase-js';
+import { UPLOAD_TYPES } from '@/config/uploadTypes';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// Map of executive IDs to their key metrics and thresholds
+const EXECUTIVE_METRICS: Record<string, { metricId: string; greenThreshold: number; amberThreshold: number; higherIsBetter: boolean }[]> = {
+  'exec-ceo': [
+    { metricId: 'initiativesOnTrack', greenThreshold: 80, amberThreshold: 60, higherIsBetter: true },
+  ],
+  'exec-president': [
+    { metricId: 'cashPosition', greenThreshold: 500000, amberThreshold: 300000, higherIsBetter: true },
+  ],
+  'exec-coo': [
+    { metricId: 'harvestRate', greenThreshold: 95, amberThreshold: 85, higherIsBetter: true },
+    { metricId: 'utilization', greenThreshold: 75, amberThreshold: 65, higherIsBetter: true },
+  ],
+  'exec-cfo': [
+    { metricId: 'arAging', greenThreshold: 50000, amberThreshold: 100000, higherIsBetter: false },
+    { metricId: 'closeStatus', greenThreshold: 100, amberThreshold: 75, higherIsBetter: true },
+  ],
+  'exec-cdao': [
+    { metricId: 'hmrfCoverage', greenThreshold: 90, amberThreshold: 70, higherIsBetter: true },
+  ],
+  'exec-cgo': [
+    { metricId: 'winRate', greenThreshold: 40, amberThreshold: 30, higherIsBetter: true },
+    { metricId: 'pipelineValue', greenThreshold: 500000, amberThreshold: 300000, higherIsBetter: true },
+  ],
+  'exec-cso': [
+    { metricId: 'onTimeDelivery', greenThreshold: 95, amberThreshold: 85, higherIsBetter: true },
+    { metricId: 'csat', greenThreshold: 9, amberThreshold: 7, higherIsBetter: true },
+  ],
+};
+
+/**
+ * Calculate executive status based on upload compliance and metric values
+ */
+async function calculateExecutiveStatus(
+  executiveId: string,
+  metrics: Record<string, MetricInfo>,
+  uploadedTypes: Set<string>
+): Promise<HealthStatus> {
+  // Get required upload types for this executive
+  const requiredTypes = UPLOAD_TYPES.filter(t => t.allowedExecutives.includes(executiveId));
+  const uploadedCount = requiredTypes.filter(t => uploadedTypes.has(t.id)).length;
+  const uploadComplianceRate = requiredTypes.length > 0 ? uploadedCount / requiredTypes.length : 1;
+
+  // Check metric thresholds
+  const execMetrics = EXECUTIVE_METRICS[executiveId] || [];
+  let hasRedMetric = false;
+  let hasAmberMetric = false;
+
+  for (const config of execMetrics) {
+    const value = metrics[config.metricId]?.value;
+    if (value === undefined) {
+      // Missing data counts as amber
+      hasAmberMetric = true;
+      continue;
+    }
+
+    if (config.higherIsBetter) {
+      if (value < config.amberThreshold) hasRedMetric = true;
+      else if (value < config.greenThreshold) hasAmberMetric = true;
+    } else {
+      if (value > config.amberThreshold) hasRedMetric = true;
+      else if (value > config.greenThreshold) hasAmberMetric = true;
+    }
+  }
+
+  // Determine overall status
+  if (hasRedMetric || uploadComplianceRate < 0.5) {
+    return 'critical';
+  }
+  if (hasAmberMetric || uploadComplianceRate < 1) {
+    return 'warning';
+  }
+  return 'healthy';
+}
+
+/**
+ * Fetch which upload types each executive has completed
+ */
+async function fetchUploadsByExecutive(): Promise<Map<string, Set<string>>> {
+  const result = new Map<string, Set<string>>();
+
+  try {
+    const { data, error } = await supabase
+      .from('upload_history')
+      .select('executive_id, upload_type')
+      .eq('status', 'completed');
+
+    if (!error && data) {
+      for (const row of data) {
+        if (row.executive_id && row.upload_type) {
+          if (!result.has(row.executive_id)) {
+            result.set(row.executive_id, new Set());
+          }
+          result.get(row.executive_id)!.add(row.upload_type);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch uploads by executive:', err);
+  }
+
+  return result;
+}
 
 /**
  * GET /api/executives
@@ -11,6 +120,12 @@ import { DEFAULT_EXECUTIVES } from '@/config/executives';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const periodType = searchParams.get('periodType') || 'week';
+
+  // Fetch real data for status calculation
+  const [metrics, uploadsByExec] = await Promise.all([
+    fetchLatestMetrics(),
+    fetchUploadsByExecutive(),
+  ]);
 
   // Simulate process and function data for each executive
   const executiveProcesses: Record<string, { processes: ProcessSummary[]; functions: ProcessSummary[] }> = {
@@ -107,39 +222,39 @@ export async function GET(request: Request) {
     },
   };
 
-  // Build executive summaries
-  const executives: ExecutiveSummary[] = DEFAULT_EXECUTIVES.map((exec) => {
-    const execId = exec.id!;
-    const procData = executiveProcesses[execId] || { processes: [], functions: [] };
+  // Build executive summaries with calculated status based on real data
+  const executives: ExecutiveSummary[] = await Promise.all(
+    DEFAULT_EXECUTIVES.map(async (exec) => {
+      const execId = exec.id!;
+      const procData = executiveProcesses[execId] || { processes: [], functions: [] };
 
-    // Calculate overall status
-    const allItems = [...procData.processes, ...procData.functions];
-    const overallStatus: HealthStatus =
-      allItems.some(p => p.overallStatus === 'critical') ? 'critical' :
-      allItems.some(p => p.overallStatus === 'warning') ? 'warning' : 'healthy';
+      // Calculate overall status based on upload compliance and metric thresholds
+      const execUploads = uploadsByExec.get(execId) || new Set<string>();
+      const overallStatus = await calculateExecutiveStatus(execId, metrics, execUploads);
 
-    return {
-      id: execId,
-      name: exec.name!,
-      title: exec.title!,
-      role: exec.role!,
-      email: exec.email,
-      displayOrder: exec.displayOrder!,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      processes: procData.processes,
-      functions: procData.functions,
-      overallStatus,
-      processCount: procData.processes.length,
-      functionCount: procData.functions.length,
-      taskCount: procData.processes.reduce((sum, p) => sum + (p.taskCount || 0), 0) +
-                 procData.functions.reduce((sum, f) => sum + (f.taskCount || 0), 0),
-    };
-  });
+      return {
+        id: execId,
+        name: exec.name!,
+        title: exec.title!,
+        role: exec.role!,
+        email: exec.email,
+        displayOrder: exec.displayOrder!,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        processes: procData.processes,
+        functions: procData.functions,
+        overallStatus,
+        processCount: procData.processes.length,
+        functionCount: procData.functions.length,
+        taskCount: procData.processes.reduce((sum, p) => sum + (p.taskCount || 0), 0) +
+                   procData.functions.reduce((sum, f) => sum + (f.taskCount || 0), 0),
+      };
+    })
+  );
 
   // Build CEO Scorecard per F-EOC6 requirements
-  const ceoScorecard = generateCEOScorecard(periodType);
+  const ceoScorecard = await generateCEOScorecard(periodType);
 
   const response: ExecutiveOverviewResponse = {
     executives,
@@ -182,106 +297,208 @@ function createProcessSummary(
 /**
  * Generate CEO Scorecard data per F-EOC6 requirements
  * Shows: Pipeline, Delivery, Margin, Cash, Staffing, Strategic Initiatives
- * Now includes audit metadata for each category
+ * Fetches real data from calculated_metrics table, shows null for missing data
  */
-function generateCEOScorecard(periodType: string): CEOScorecardWithAudit {
-  // Period-based variance
-  const variance = periodType === 'week' ? 1.0 : periodType === 'month' ? 0.95 : 0.90;
+async function generateCEOScorecard(periodType: string): Promise<CEOScorecardWithAudit> {
   const now = new Date().toISOString();
 
-  // Generate audit metadata for each category
+  // Fetch all latest metrics from database
+  const metrics = await fetchLatestMetrics();
+
+  // Helper to get metric value or undefined
+  const getMetric = (metricId: string): number | undefined => {
+    return metrics[metricId]?.value;
+  };
+
+  // Helper to determine status based on value and thresholds
+  const getStatus = (
+    value: number | undefined,
+    thresholds: { green: number; amber: number },
+    higherIsBetter: boolean = true
+  ): HealthStatus => {
+    if (value === undefined) return 'warning'; // No data = warning
+    if (higherIsBetter) {
+      if (value >= thresholds.green) return 'healthy';
+      if (value >= thresholds.amber) return 'warning';
+      return 'critical';
+    } else {
+      if (value <= thresholds.green) return 'healthy';
+      if (value <= thresholds.amber) return 'warning';
+      return 'critical';
+    }
+  };
+
+  // Build scorecard from real data (or undefined for missing)
+  const pipelineValue = getMetric('pipelineValue');
+  const winRate = getMetric('winRate');
+  const onTimeDelivery = getMetric('onTimeDelivery');
+  const csat = getMetric('csat');
+  const cashPosition = getMetric('cashPosition');
+  const dso = getMetric('dso');
+  const arAging = getMetric('arAging');
+  const utilization = getMetric('utilization');
+  const openPositions = getMetric('openPositions');
+  const initiativesOnTrack = getMetric('initiativesOnTrack');
+
+  // Helper to build data source info from metric
+  const buildDataSource = (metric: MetricInfo | undefined, name: string, executiveId: string) => {
+    if (!metric?.sourceUploadId) return [];
+    return [{
+      name,
+      lastUpdated: metric.calculatedAt || now,
+      uploadedBy: metric.uploaderName || 'System',
+      executiveId,
+      recordCount: 0,
+      uploadId: metric.sourceUploadId,
+      fileName: metric.fileName,
+    }];
+  };
+
+  // Generate audit metadata showing data sources
   const audit = {
     pipelineHealth: createAuditMetadata(
       'Pipeline metrics aggregated from BD process tracking data',
       'Pipeline Value = Sum of all active opportunities; Win Rate = (Wins / Total Closed) * 100',
-      [
-        { name: 'BD Pipeline Tracker', lastUpdated: '2026-01-19T10:30:00Z', uploadedBy: 'Cheryl Matochik', executiveId: 'exec-cgo', recordCount: 47 },
-      ]
+      buildDataSource(metrics['pipelineValue'], 'BD Pipeline Upload', 'exec-cgo')
     ),
     deliveryHealth: createAuditMetadata(
       'Delivery metrics calculated from service delivery tracking and client feedback',
       'On-Time = (Delivered On Time / Total Deliverables) * 100; Satisfaction = Avg rating from client surveys',
-      [
-        { name: 'Delivery Tracking Sheet', lastUpdated: '2026-01-18T14:00:00Z', uploadedBy: 'Ashley DeGarmo', executiveId: 'exec-cso', recordCount: 32 },
-        { name: 'Client Satisfaction Survey', lastUpdated: '2026-01-15T09:00:00Z', uploadedBy: 'Ashley DeGarmo', executiveId: 'exec-cso', recordCount: 18 },
-      ]
+      buildDataSource(metrics['onTimeDelivery'], 'Delivery Tracking Upload', 'exec-cso')
     ),
     margin: createAuditMetadata(
       'Contract margin calculated from contract performance data',
       'Margin = ((Revenue - Cost) / Revenue) * 100',
-      [
-        { name: 'Contract Performance Data', lastUpdated: '2026-01-17T16:00:00Z', uploadedBy: 'Ashley DeGarmo', executiveId: 'exec-cso', recordCount: 15 },
-      ]
+      []
     ),
     cash: createAuditMetadata(
       'Cash metrics aggregated from financial systems and AR aging reports',
       'DSO = (AR / Revenue) * Days in Period; AR 90+ = Sum of invoices > 90 days',
-      [
-        { name: 'Cash Position Report', lastUpdated: '2026-01-20T08:00:00Z', uploadedBy: 'Greg Williams', executiveId: 'exec-president', recordCount: 1 },
-        { name: 'AR Aging Report', lastUpdated: '2026-01-19T11:00:00Z', uploadedBy: 'Aisha Waheed', executiveId: 'exec-cfo', recordCount: 156 },
-      ]
+      buildDataSource(metrics['arAging'], 'AR Aging Upload', 'exec-cfo')
     ),
     staffingCapacity: createAuditMetadata(
       'Staffing metrics from Harvest time tracking and HR systems',
       'Utilization = (Billable Hours / Available Hours) * 100',
-      [
-        { name: 'Harvest Compliance Report', lastUpdated: '2026-01-19T09:00:00Z', uploadedBy: 'Jordana Choucair', executiveId: 'exec-coo', recordCount: 24 },
-        { name: 'Open Positions Tracker', lastUpdated: '2026-01-18T12:00:00Z', uploadedBy: 'Jordana Choucair', executiveId: 'exec-coo', recordCount: 3 },
-      ]
+      buildDataSource(metrics['utilization'], 'Staffing Upload', 'exec-coo')
     ),
     strategicInitiatives: createAuditMetadata(
       'Strategic initiative progress tracked in quarterly planning documents',
       'On Track = Count of initiatives with status "Green" or "On Track"',
-      [
-        { name: 'Strategic Planning Tracker', lastUpdated: '2026-01-15T15:00:00Z', uploadedBy: 'David Smith', executiveId: 'exec-ceo', recordCount: 6 },
-      ]
+      buildDataSource(metrics['initiativesOnTrack'], 'Strategic Upload', 'exec-ceo')
     ),
   };
 
   return {
     pipelineHealth: {
-      pipelineValue: Math.round(2450000 * variance),
-      pipelineValueChange: periodType === 'week' ? 8.5 : periodType === 'month' ? 5.2 : 2.1,
-      winRate: Math.round(38 * variance * 10) / 10,
-      winRateChange: periodType === 'week' ? 2.1 : -1.5,
-      status: 'healthy',
+      pipelineValue: pipelineValue ?? 0,
+      pipelineValueChange: undefined,
+      winRate: winRate ?? 0,
+      winRateChange: undefined,
+      status: pipelineValue !== undefined ? getStatus(winRate, { green: 40, amber: 30 }) : 'warning',
     },
     deliveryHealth: {
-      onTimeDelivery: Math.round(91 * variance * 10) / 10,
-      onTimeDeliveryChange: periodType === 'week' ? 3.0 : -2.1,
-      clientSatisfaction: 4.7,
-      clientSatisfactionChange: 0.2,
-      status: periodType === 'week' ? 'warning' : 'warning',
+      onTimeDelivery: onTimeDelivery ?? 0,
+      onTimeDeliveryChange: undefined,
+      clientSatisfaction: csat ? csat / 2 : 0, // Convert 10-scale to 5-scale
+      clientSatisfactionChange: undefined,
+      status: onTimeDelivery !== undefined ? getStatus(onTimeDelivery, { green: 95, amber: 85 }) : 'warning',
     },
     margin: {
-      contractMargin: Math.round(32 * variance * 10) / 10,
-      contractMarginChange: periodType === 'week' ? 1.2 : -0.5,
-      status: 'healthy',
-    },
-    cash: {
-      cashPosition: Math.round(850000 * variance),
-      cashPositionChange: periodType === 'week' ? 12.3 : 5.8,
-      dso: periodType === 'week' ? 42 : periodType === 'month' ? 44 : 48,
-      dsoChange: periodType === 'week' ? -3 : 2,
-      ar90Plus: periodType === 'week' ? 28500 : periodType === 'month' ? 35000 : 48000,
-      ar90PlusChange: periodType === 'week' ? -15.2 : 8.5,
-      status: periodType === 'week' ? 'healthy' : 'warning',
-    },
-    staffingCapacity: {
-      billableUtilization: Math.round(72 * variance * 10) / 10,
-      billableUtilizationChange: periodType === 'week' ? 2.1 : -1.8,
-      openPositions: 3,
-      openPositionsChange: periodType === 'week' ? 0 : 1,
+      contractMargin: 0, // No upload type for this yet
+      contractMarginChange: undefined,
       status: 'warning',
     },
+    cash: {
+      cashPosition: cashPosition ?? 0,
+      cashPositionChange: undefined,
+      dso: dso ?? 0,
+      dsoChange: undefined,
+      ar90Plus: arAging ?? 0,
+      ar90PlusChange: undefined,
+      status: arAging !== undefined ? getStatus(arAging, { green: 50000, amber: 100000 }, false) : 'warning',
+    },
+    staffingCapacity: {
+      billableUtilization: utilization ?? 0,
+      billableUtilizationChange: undefined,
+      openPositions: openPositions ?? 0,
+      openPositionsChange: undefined,
+      status: utilization !== undefined ? getStatus(utilization, { green: 75, amber: 65 }) : 'warning',
+    },
     strategicInitiatives: {
-      initiativesOnTrack: periodType === 'week' ? 5 : periodType === 'month' ? 4 : 4,
-      initiativesTotal: 6,
-      status: periodType === 'week' ? 'healthy' : 'warning',
+      initiativesOnTrack: initiativesOnTrack ?? 0,
+      initiativesTotal: 6, // Fixed total for now
+      status: initiativesOnTrack !== undefined ? getStatus((initiativesOnTrack / 6) * 100, { green: 80, amber: 60 }) : 'warning',
     },
     lastUpdated: now,
     audit,
   };
+}
+
+/**
+ * Fetch latest calculated metrics from database
+ */
+interface MetricInfo {
+  value: number;
+  calculatedAt?: string;
+  sourceUploadId?: string;
+  fileName?: string;
+  uploaderName?: string;
+}
+
+async function fetchLatestMetrics(): Promise<Record<string, MetricInfo>> {
+  try {
+    const { data, error } = await supabase
+      .from('calculated_metrics')
+      .select('metric_id, value, calculated_at, source_upload_id')
+      .order('calculated_at', { ascending: false });
+
+    if (error || !data) {
+      console.error('Error fetching metrics:', error);
+      return {};
+    }
+
+    // Get latest value for each metric
+    const latest: Record<string, MetricInfo> = {};
+    const uploadIds = new Set<string>();
+
+    for (const row of data) {
+      if (!latest[row.metric_id]) {
+        latest[row.metric_id] = {
+          value: Number(row.value),
+          calculatedAt: row.calculated_at,
+          sourceUploadId: row.source_upload_id,
+        };
+        if (row.source_upload_id) {
+          uploadIds.add(row.source_upload_id);
+        }
+      }
+    }
+
+    // Fetch upload details for the source uploads
+    if (uploadIds.size > 0) {
+      const { data: uploads } = await supabase
+        .from('upload_history')
+        .select('id, file_name, uploader_name')
+        .in('id', Array.from(uploadIds));
+
+      if (uploads) {
+        const uploadMap = new Map(uploads.map(u => [u.id, u]));
+        for (const metricId of Object.keys(latest)) {
+          const uploadId = latest[metricId].sourceUploadId;
+          if (uploadId && uploadMap.has(uploadId)) {
+            const upload = uploadMap.get(uploadId)!;
+            latest[metricId].fileName = upload.file_name;
+            latest[metricId].uploaderName = upload.uploader_name;
+          }
+        }
+      }
+    }
+
+    return latest;
+  } catch (err) {
+    console.error('Failed to fetch metrics:', err);
+    return {};
+  }
 }
 
 /**
@@ -290,7 +507,7 @@ function generateCEOScorecard(periodType: string): CEOScorecardWithAudit {
 function createAuditMetadata(
   calculationMethod: string,
   formula: string,
-  dataSources: { name: string; lastUpdated: string; uploadedBy: string; executiveId: string; recordCount: number }[]
+  dataSources: { name: string; lastUpdated: string; uploadedBy: string; executiveId: string; recordCount: number; uploadId?: string; fileName?: string }[]
 ): AuditMetadata {
   return {
     calculatedAt: new Date().toISOString(),

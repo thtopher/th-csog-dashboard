@@ -1,7 +1,9 @@
 'use client';
 
 import { cn } from '@/lib/utils/cn';
-import { CodeTooltip } from '@/components/common/CodeTooltip';
+import { DataSourceBadges } from '@/components/common/DataSourceBadge';
+import { CompactRACILegend } from './CompactRACILegend';
+import { getDataSourcesForProcess } from '@/lib/utils/dataSourceMapping';
 import type { TaskWithRACI } from '@/types';
 
 interface RACIMatrixProps {
@@ -11,12 +13,21 @@ interface RACIMatrixProps {
 }
 
 export function RACIMatrix({ tasks, processCode, processName }: RACIMatrixProps) {
+  const dataSources = getDataSourcesForProcess(processCode);
+
   return (
     <div className="overflow-x-auto">
+      <div className="flex items-center justify-between mb-2">
+        <CompactRACILegend className="mb-0" />
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">Data from:</span>
+          <DataSourceBadges sources={dataSources} size="sm" />
+        </div>
+      </div>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
               Task
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -51,12 +62,10 @@ export function RACIMatrix({ tasks, processCode, processName }: RACIMatrixProps)
         <tbody className="bg-white divide-y divide-gray-200">
           {tasks.map((task) => (
             <tr key={task.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3">
-                <CodeTooltip code={task.code}>
-                  <span className="font-mono text-sm font-semibold text-gray-900">
-                    {task.code}
-                  </span>
-                </CodeTooltip>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <span className="font-mono text-sm font-semibold text-gray-900">
+                  {task.code}
+                </span>
               </td>
               <td className="px-4 py-3 text-sm text-gray-700 max-w-md">
                 {task.description}
@@ -119,37 +128,3 @@ function RACIBadge({ role, person }: RACIBadgeProps) {
   );
 }
 
-interface RACILegendProps {
-  className?: string;
-}
-
-export function RACILegend({ className }: RACILegendProps) {
-  return (
-    <div className={cn('flex flex-wrap gap-4 text-sm', className)}>
-      <div className="flex items-center gap-2">
-        <span className="h-3 w-3 rounded-full bg-red-500" />
-        <span className="text-gray-600">
-          <strong>A</strong> = Accountable (owns outcome)
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="h-3 w-3 rounded-full bg-blue-500" />
-        <span className="text-gray-600">
-          <strong>R</strong> = Responsible (does work)
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="h-3 w-3 rounded-full bg-amber-500" />
-        <span className="text-gray-600">
-          <strong>C</strong> = Contributor (provides input)
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="h-3 w-3 rounded-full bg-gray-400" />
-        <span className="text-gray-600">
-          <strong>I</strong> = Informed (receives updates)
-        </span>
-      </div>
-    </div>
-  );
-}

@@ -84,9 +84,9 @@ export function MPAUploadWizard({
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
 
-  // Initialize batch on first step
-  const initializeBatch = useCallback(async () => {
-    if (batchId) return;
+  // Initialize batch on first step - returns the batch ID
+  const initializeBatch = useCallback(async (): Promise<string | null> => {
+    if (batchId) return batchId;
 
     try {
       const response = await fetch('/api/mpa/batches', {
@@ -99,16 +99,33 @@ export function MPAUploadWizard({
       if (data.success) {
         setBatchId(data.batch.id);
         setUploadPaths(data.uploadPaths);
+        return data.batch.id;
       }
+      return null;
     } catch (error) {
       console.error('Failed to initialize batch:', error);
+      return null;
     }
   }, [batchId, monthName, userEmail]);
 
   // Handle file selection
   const handleFileSelect = useCallback(
     async (type: MPAFileType, file: File) => {
-      await initializeBatch();
+      // Get or create batch and get the ID directly
+      const currentBatchId = await initializeBatch();
+
+      if (!currentBatchId) {
+        setFiles((prev) => ({
+          ...prev,
+          [type]: {
+            file,
+            status: 'error',
+            path: null,
+            error: 'Failed to initialize batch',
+          },
+        }));
+        return;
+      }
 
       setFiles((prev) => ({
         ...prev,
@@ -132,12 +149,16 @@ export function MPAUploadWizard({
 
         const { path } = await response.json();
 
-        // Update batch with file path
-        await fetch(`/api/mpa/batches/${batchId}`, {
+        // Update batch with file path using the returned batch ID
+        const patchResponse = await fetch(`/api/mpa/batches/${currentBatchId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ [`${type}FilePath`]: path }),
         });
+
+        if (!patchResponse.ok) {
+          throw new Error('Failed to update batch');
+        }
 
         setFiles((prev) => ({
           ...prev,
@@ -155,7 +176,7 @@ export function MPAUploadWizard({
         }));
       }
     },
-    [batchId, initializeBatch, uploadPaths]
+    [initializeBatch, uploadPaths]
   );
 
   // Handle drag and drop

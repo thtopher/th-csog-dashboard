@@ -486,6 +486,65 @@ export const UPLOAD_SCHEMAS: Record<string, UploadSchema> = {
       },
     ],
   },
+
+  notion_pipeline: {
+    id: 'notion_pipeline',
+    name: 'Pipeline Export (Notion)',
+    periodType: 'month',
+    columns: [
+      {
+        name: 'prospect_name',
+        aliases: ['name', 'company', 'client', 'opportunity'],
+        required: true,
+        type: 'string',
+      },
+      {
+        name: 'qual_level',
+        aliases: ['qualified_level', 'probability', 'stage', 'status'],
+        required: true,
+        type: 'string',
+      },
+      {
+        name: 'projected_amount',
+        aliases: ['amount', 'value', 'deal_value', 'contract_value'],
+        required: true,
+        type: 'number',
+      },
+      {
+        name: 'business_unit',
+        aliases: ['unit', 'division', 'segment'],
+        required: false,
+        type: 'string',
+      },
+      {
+        name: 'accrual_months',
+        aliases: ['anticipated_accrual', 'accrual', 'months'],
+        required: false,
+        type: 'string',
+      },
+      {
+        name: 'contract_duration',
+        aliases: ['duration', 'term', 'length'],
+        required: false,
+        type: 'number',
+      },
+    ],
+  },
+
+  excel_proforma: {
+    id: 'excel_proforma',
+    name: 'Pro Forma Workbook',
+    periodType: 'month',
+    columns: [
+      // This schema is minimal since the actual values are entered via confirmation modal
+      {
+        name: 'period',
+        aliases: ['date', 'month', 'report_period'],
+        required: false,
+        type: 'date',
+      },
+    ],
+  },
 };
 
 /**

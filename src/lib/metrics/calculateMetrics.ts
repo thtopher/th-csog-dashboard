@@ -46,6 +46,7 @@ export async function calculateMetricsFromUpload(
       excel_starset: calculateStarsetMetrics,
       excel_hmrf: calculateHMRFMetrics,
       excel_strategic: calculateStrategicMetrics,
+      notion_pipeline: calculateNotionPipelineMetrics,
     };
 
     const calculator = calculators[uploadType];
@@ -629,4 +630,88 @@ function calculateStrategicMetrics(data: Record<string, unknown>[]): CalculatedM
   });
 
   return metrics;
+}
+
+/**
+ * Notion Pipeline Export
+ * Expected columns: prospect_name, qual_level (Near Close/High/Medium/Low/Qualified/Pre-Qualified/Not Qualified), projected_amount
+ * Calculates: Total Projected Amount, Probability-Weighted Pipeline Value
+ */
+function calculateNotionPipelineMetrics(data: Record<string, unknown>[]): CalculatedMetric[] {
+  // Probability mapping based on David's Notion pipeline qualification levels
+  const PROBABILITY_MAP: Record<string, number> = {
+    'near close': 0.95,
+    'near_close': 0.95,
+    'high': 0.80,
+    'medium': 0.40,
+    'qualified': 0.40,
+    'low': 0.15,
+    'pre-qualified': 0.15,
+    'pre_qualified': 0.15,
+    'prequalified': 0.15,
+    'not qualified': 0,
+    'not_qualified': 0,
+    'unqualified': 0,
+  };
+
+  let totalProjected = 0;
+  let totalWeighted = 0;
+  let opportunityCount = 0;
+
+  for (const row of data) {
+    // Try multiple column names for amount
+    const amount = Number(
+      row.projected_amount ||
+      row['Projected Amount'] ||
+      row.amount ||
+      row.value ||
+      row['Deal Value'] ||
+      row['Contract Value'] ||
+      0
+    );
+
+    // Try multiple column names for qualification level
+    const levelRaw = String(
+      row.qual_level ||
+      row['Qual Level'] ||
+      row.probability ||
+      row.stage ||
+      row.status ||
+      row['Qualification Level'] ||
+      ''
+    ).toLowerCase().trim();
+
+    // Look up probability, default to 15% if unknown
+    const probability = PROBABILITY_MAP[levelRaw] ?? 0.15;
+
+    if (amount > 0) {
+      totalProjected += amount;
+      totalWeighted += amount * probability;
+      opportunityCount++;
+    }
+  }
+
+  return [
+    {
+      metricId: 'pipeline_total_projected',
+      value: Math.round(totalProjected),
+      sourceUploadId: '',
+      calculatedAt: '',
+      details: { opportunityCount },
+    },
+    {
+      metricId: 'pipeline_weighted',
+      value: Math.round(totalWeighted),
+      sourceUploadId: '',
+      calculatedAt: '',
+      details: { opportunityCount, avgProbability: opportunityCount > 0 ? totalWeighted / totalProjected : 0 },
+    },
+    // Also update the legacy pipelineValue metric for backwards compatibility
+    {
+      metricId: 'pipelineValue',
+      value: Math.round(totalWeighted),
+      sourceUploadId: '',
+      calculatedAt: '',
+    },
+  ];
 }

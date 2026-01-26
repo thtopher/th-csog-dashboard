@@ -59,7 +59,12 @@ export function CEOScorecard({ scorecard, isLoading }: CEOScorecardProps) {
         source: 'BD Process',
         status: scorecard.pipelineHealth.status,
         metrics: [
-          { label: 'Pipeline Value', value: formatCurrency(scorecard.pipelineHealth.pipelineValue), change: scorecard.pipelineHealth.pipelineValueChange },
+          ...(scorecard.pipelineHealth.pipelineTotalProjected !== undefined
+            ? [{ label: 'Total Projected', value: formatCurrency(scorecard.pipelineHealth.pipelineTotalProjected), change: scorecard.pipelineHealth.pipelineTotalProjectedChange }]
+            : []),
+          ...(scorecard.pipelineHealth.pipelineWeighted !== undefined
+            ? [{ label: 'Probability Weighted', value: formatCurrency(scorecard.pipelineHealth.pipelineWeighted), change: scorecard.pipelineHealth.pipelineWeightedChange }]
+            : [{ label: 'Pipeline Value', value: formatCurrency(scorecard.pipelineHealth.pipelineValue), change: scorecard.pipelineHealth.pipelineValueChange }]),
           { label: 'Win Rate', value: `${scorecard.pipelineHealth.winRate}%`, change: scorecard.pipelineHealth.winRateChange },
         ],
       },
@@ -77,7 +82,15 @@ export function CEOScorecard({ scorecard, isLoading }: CEOScorecardProps) {
         source: 'CP Process',
         status: scorecard.margin.status,
         metrics: [
-          { label: 'Contract Margin', value: `${scorecard.margin.contractMargin}%`, change: scorecard.margin.contractMarginChange },
+          ...(scorecard.margin.baseRevenue !== undefined
+            ? [{ label: 'Base Revenue', value: formatCurrency(scorecard.margin.baseRevenue), change: scorecard.margin.baseRevenueChange }]
+            : []),
+          ...(scorecard.margin.netIncome !== undefined
+            ? [{ label: 'Net Income', value: formatCurrency(scorecard.margin.netIncome), change: scorecard.margin.netIncomeChange }]
+            : []),
+          ...(scorecard.margin.marginPercent !== undefined
+            ? [{ label: 'Margin %', value: `${scorecard.margin.marginPercent}%`, change: scorecard.margin.marginPercentChange }]
+            : [{ label: 'Contract Margin', value: `${scorecard.margin.contractMargin}%`, change: scorecard.margin.contractMarginChange }]),
         ],
       },
       cash: {
@@ -85,6 +98,9 @@ export function CEOScorecard({ scorecard, isLoading }: CEOScorecardProps) {
         source: 'CF, AR Processes',
         status: scorecard.cash.status,
         metrics: [
+          ...(scorecard.cash.cashProjection6Mo !== undefined
+            ? [{ label: '6-Mo Projection', value: formatCurrency(scorecard.cash.cashProjection6Mo), change: scorecard.cash.cashProjection6MoChange }]
+            : []),
           { label: 'Cash Position', value: formatCurrency(scorecard.cash.cashPosition), change: scorecard.cash.cashPositionChange },
           { label: 'DSO', value: `${scorecard.cash.dso} days`, change: scorecard.cash.dsoChange, lowerIsBetter: true },
           { label: 'AR 90+', value: formatCurrency(scorecard.cash.ar90Plus), change: scorecard.cash.ar90PlusChange, lowerIsBetter: true },
@@ -145,11 +161,24 @@ export function CEOScorecard({ scorecard, isLoading }: CEOScorecardProps) {
           icon={Target}
           status={scorecard.pipelineHealth.status}
           metrics={[
-            {
-              label: 'Pipeline Value',
-              value: formatCurrency(scorecard.pipelineHealth.pipelineValue),
-              change: scorecard.pipelineHealth.pipelineValueChange,
-            },
+            ...(scorecard.pipelineHealth.pipelineTotalProjected !== undefined
+              ? [{
+                  label: 'Total Projected',
+                  value: formatCurrency(scorecard.pipelineHealth.pipelineTotalProjected),
+                  change: scorecard.pipelineHealth.pipelineTotalProjectedChange,
+                }]
+              : []),
+            ...(scorecard.pipelineHealth.pipelineWeighted !== undefined
+              ? [{
+                  label: 'Probability Weighted',
+                  value: formatCurrency(scorecard.pipelineHealth.pipelineWeighted),
+                  change: scorecard.pipelineHealth.pipelineWeightedChange,
+                }]
+              : [{
+                  label: 'Pipeline Value',
+                  value: formatCurrency(scorecard.pipelineHealth.pipelineValue),
+                  change: scorecard.pipelineHealth.pipelineValueChange,
+                }]),
             {
               label: 'Win Rate',
               value: `${scorecard.pipelineHealth.winRate}%`,
@@ -187,11 +216,31 @@ export function CEOScorecard({ scorecard, isLoading }: CEOScorecardProps) {
           icon={DollarSign}
           status={scorecard.margin.status}
           metrics={[
-            {
-              label: 'Contract Margin',
-              value: `${scorecard.margin.contractMargin}%`,
-              change: scorecard.margin.contractMarginChange,
-            },
+            ...(scorecard.margin.baseRevenue !== undefined
+              ? [{
+                  label: 'Base Revenue',
+                  value: formatCurrency(scorecard.margin.baseRevenue),
+                  change: scorecard.margin.baseRevenueChange,
+                }]
+              : []),
+            ...(scorecard.margin.netIncome !== undefined
+              ? [{
+                  label: 'Net Income',
+                  value: formatCurrency(scorecard.margin.netIncome),
+                  change: scorecard.margin.netIncomeChange,
+                }]
+              : []),
+            ...(scorecard.margin.marginPercent !== undefined
+              ? [{
+                  label: 'Margin %',
+                  value: `${scorecard.margin.marginPercent}%`,
+                  change: scorecard.margin.marginPercentChange,
+                }]
+              : [{
+                  label: 'Contract Margin',
+                  value: `${scorecard.margin.contractMargin}%`,
+                  change: scorecard.margin.contractMarginChange,
+                }]),
           ]}
           source="CP Process"
           onClick={() => handleCardClick('margin')}
@@ -203,6 +252,13 @@ export function CEOScorecard({ scorecard, isLoading }: CEOScorecardProps) {
           icon={Wallet}
           status={scorecard.cash.status}
           metrics={[
+            ...(scorecard.cash.cashProjection6Mo !== undefined
+              ? [{
+                  label: '6-Mo Projection',
+                  value: formatCurrency(scorecard.cash.cashProjection6Mo),
+                  change: scorecard.cash.cashProjection6MoChange,
+                }]
+              : []),
             {
               label: 'Cash Position',
               value: formatCurrency(scorecard.cash.cashPosition),

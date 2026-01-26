@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format, isSameDay, isSameMonth } from 'date-fns';
 import { cn } from '@/lib/utils/cn';
 import { UploadCalendarCell } from './UploadCalendarCell';
 import { TimelineLegend } from './TimelineLegend';
+import { CalendarDayModal } from './CalendarDayModal';
 import { getCalendarDays } from '@/lib/upload/scheduleUtils';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import type { CalendarEvent } from '@/types';
 
 interface MonthlyTimelineProps {
@@ -28,6 +29,10 @@ export function MonthlyTimeline({
 }: MonthlyTimelineProps) {
   const today = new Date();
   const currentMonth = new Date(year, month, 1);
+  const [selectedDate, setSelectedDate] = useState<{ date: Date; events: CalendarEvent[] } | null>(null);
+
+  // Check if we're viewing the current month
+  const isCurrentMonthView = year === today.getFullYear() && month === today.getMonth();
 
   // Get calendar grid days
   const calendarDays = useMemo(() => getCalendarDays(year, month), [year, month]);
@@ -56,6 +61,14 @@ export function MonthlyTimeline({
     onMonthChange?.(newYear, newMonth);
   };
 
+  const handleGoToToday = () => {
+    onMonthChange?.(today.getFullYear(), today.getMonth());
+  };
+
+  const handleDateClick = (date: Date, dayEvents: CalendarEvent[]) => {
+    setSelectedDate({ date, events: dayEvents });
+  };
+
   if (isLoading) {
     return <MonthlyTimelineSkeleton />;
   }
@@ -64,24 +77,35 @@ export function MonthlyTimeline({
     <div className="bg-white rounded-lg border overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handlePrevMonth}
-            className="p-1 rounded hover:bg-gray-200 transition-colors"
-            aria-label="Previous month"
-          >
-            <ChevronLeft size={18} className="text-gray-600" />
-          </button>
-          <h3 className="text-sm font-semibold text-gray-900 min-w-[140px] text-center">
-            {format(currentMonth, 'MMMM yyyy')}
-          </h3>
-          <button
-            onClick={handleNextMonth}
-            className="p-1 rounded hover:bg-gray-200 transition-colors"
-            aria-label="Next month"
-          >
-            <ChevronRight size={18} className="text-gray-600" />
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handlePrevMonth}
+              className="p-1 rounded hover:bg-gray-200 transition-colors"
+              aria-label="Previous month"
+            >
+              <ChevronLeft size={18} className="text-gray-600" />
+            </button>
+            <h3 className="text-sm font-semibold text-gray-900 min-w-[140px] text-center">
+              {format(currentMonth, 'MMMM yyyy')}
+            </h3>
+            <button
+              onClick={handleNextMonth}
+              className="p-1 rounded hover:bg-gray-200 transition-colors"
+              aria-label="Next month"
+            >
+              <ChevronRight size={18} className="text-gray-600" />
+            </button>
+          </div>
+          {!isCurrentMonthView && (
+            <button
+              onClick={handleGoToToday}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+            >
+              <CalendarDays size={14} />
+              Today
+            </button>
+          )}
         </div>
 
         {/* Summary */}
@@ -133,6 +157,7 @@ export function MonthlyTimeline({
                 events={dayEvents}
                 isToday={isToday}
                 isCurrentMonth={isCurrentMonth}
+                onClick={date ? () => handleDateClick(date, dayEvents) : undefined}
               />
             );
           })}
@@ -143,6 +168,16 @@ export function MonthlyTimeline({
       <div className="px-4 py-3 bg-gray-50 border-t">
         <TimelineLegend />
       </div>
+
+      {/* Day Detail Modal */}
+      {selectedDate && (
+        <CalendarDayModal
+          date={selectedDate.date}
+          events={selectedDate.events}
+          isOpen={true}
+          onClose={() => setSelectedDate(null)}
+        />
+      )}
     </div>
   );
 }

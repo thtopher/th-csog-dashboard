@@ -330,10 +330,15 @@ async function generateCEOScorecard(periodType: string): Promise<CEOScorecardWit
 
   // Build scorecard from real data (or undefined for missing)
   const pipelineValue = getMetric('pipelineValue');
+  const pipelineTotalProjected = getMetric('pipeline_total_projected');
+  const pipelineWeighted = getMetric('pipeline_weighted');
   const winRate = getMetric('winRate');
   const onTimeDelivery = getMetric('onTimeDelivery');
   const csat = getMetric('csat');
   const cashPosition = getMetric('cashPosition');
+  const cashProjection6Mo = getMetric('cash_projection_6mo');
+  const baseRevenue = getMetric('base_revenue');
+  const netIncome = getMetric('net_income_margin');
   const dso = getMetric('dso');
   const arAging = getMetric('arAging');
   const utilization = getMetric('utilization');
@@ -357,9 +362,12 @@ async function generateCEOScorecard(periodType: string): Promise<CEOScorecardWit
   // Generate audit metadata showing data sources
   const audit = {
     pipelineHealth: createAuditMetadata(
-      'Pipeline metrics aggregated from BD process tracking data',
-      'Pipeline Value = Sum of all active opportunities; Win Rate = (Wins / Total Closed) * 100',
-      buildDataSource(metrics['pipelineValue'], 'BD Pipeline Upload', 'exec-cgo')
+      'Pipeline metrics from Notion pipeline export or BD tracking',
+      'Total Projected = Sum of all opportunity values; Weighted = Sum(Value * Probability); Win Rate = (Wins / Total Closed) * 100',
+      [
+        ...buildDataSource(metrics['pipeline_total_projected'], 'Notion Pipeline Export', 'exec-cgo'),
+        ...buildDataSource(metrics['pipelineValue'], 'BD Pipeline Upload', 'exec-cgo'),
+      ]
     ),
     deliveryHealth: createAuditMetadata(
       'Delivery metrics calculated from service delivery tracking and client feedback',
@@ -367,14 +375,20 @@ async function generateCEOScorecard(periodType: string): Promise<CEOScorecardWit
       buildDataSource(metrics['onTimeDelivery'], 'Delivery Tracking Upload', 'exec-cso')
     ),
     margin: createAuditMetadata(
-      'Contract margin calculated from contract performance data',
-      'Margin = ((Revenue - Cost) / Revenue) * 100',
-      []
+      'Margin calculated from Pro Forma workbook base revenue and net income',
+      'Margin % = (Net Income / Base Revenue) * 100',
+      [
+        ...buildDataSource(metrics['base_revenue'], 'Pro Forma Workbook', 'exec-cfo'),
+        ...buildDataSource(metrics['net_income_margin'], 'Pro Forma Workbook', 'exec-cfo'),
+      ]
     ),
     cash: createAuditMetadata(
-      'Cash metrics aggregated from financial systems and AR aging reports',
-      'DSO = (AR / Revenue) * Days in Period; AR 90+ = Sum of invoices > 90 days',
-      buildDataSource(metrics['arAging'], 'AR Aging Upload', 'exec-cfo')
+      'Cash metrics from Pro Forma Cash Tracker and AR aging reports',
+      '6-Mo Projection = From Cash Tracker; DSO = (AR / Revenue) * Days; AR 90+ = Sum of invoices > 90 days',
+      [
+        ...buildDataSource(metrics['cash_projection_6mo'], 'Pro Forma Workbook', 'exec-cfo'),
+        ...buildDataSource(metrics['arAging'], 'AR Aging Upload', 'exec-cfo'),
+      ]
     ),
     staffingCapacity: createAuditMetadata(
       'Staffing metrics from Harvest time tracking and HR systems',
@@ -388,13 +402,22 @@ async function generateCEOScorecard(periodType: string): Promise<CEOScorecardWit
     ),
   };
 
+  // Calculate margin percent if we have both values
+  const marginPercent = baseRevenue && netIncome ? Math.round((netIncome / baseRevenue) * 100) : undefined;
+
   return {
     pipelineHealth: {
-      pipelineValue: pipelineValue ?? 0,
+      pipelineValue: pipelineWeighted ?? pipelineValue ?? 0,
       pipelineValueChange: undefined,
+      pipelineTotalProjected: pipelineTotalProjected,
+      pipelineTotalProjectedChange: undefined,
+      pipelineWeighted: pipelineWeighted,
+      pipelineWeightedChange: undefined,
       winRate: winRate ?? 0,
       winRateChange: undefined,
-      status: pipelineValue !== undefined ? getStatus(winRate, { green: 40, amber: 30 }) : 'warning',
+      status: (pipelineWeighted !== undefined || pipelineValue !== undefined)
+        ? getStatus(winRate, { green: 40, amber: 30 })
+        : 'warning',
     },
     deliveryHealth: {
       onTimeDelivery: onTimeDelivery ?? 0,
@@ -404,18 +427,28 @@ async function generateCEOScorecard(periodType: string): Promise<CEOScorecardWit
       status: onTimeDelivery !== undefined ? getStatus(onTimeDelivery, { green: 95, amber: 85 }) : 'warning',
     },
     margin: {
-      contractMargin: 0, // No upload type for this yet
+      contractMargin: marginPercent ?? 0,
       contractMarginChange: undefined,
-      status: 'warning',
+      baseRevenue: baseRevenue,
+      baseRevenueChange: undefined,
+      netIncome: netIncome,
+      netIncomeChange: undefined,
+      marginPercent: marginPercent,
+      marginPercentChange: undefined,
+      status: baseRevenue !== undefined ? (marginPercent && marginPercent > 0 ? 'healthy' : marginPercent !== undefined && marginPercent > -10 ? 'warning' : 'critical') : 'warning',
     },
     cash: {
       cashPosition: cashPosition ?? 0,
       cashPositionChange: undefined,
+      cashProjection6Mo: cashProjection6Mo,
+      cashProjection6MoChange: undefined,
       dso: dso ?? 0,
       dsoChange: undefined,
       ar90Plus: arAging ?? 0,
       ar90PlusChange: undefined,
-      status: arAging !== undefined ? getStatus(arAging, { green: 50000, amber: 100000 }, false) : 'warning',
+      status: (cashProjection6Mo !== undefined || arAging !== undefined)
+        ? getStatus(arAging ?? 0, { green: 50000, amber: 100000 }, false)
+        : 'warning',
     },
     staffingCapacity: {
       billableUtilization: utilization ?? 0,

@@ -24,6 +24,7 @@ import {
   TrendingUp,
   Handshake,
   Shield,
+  BarChart3,
 } from 'lucide-react';
 
 // Map executive IDs to appropriate icons
@@ -136,6 +137,14 @@ export function Header() {
                 </>
               )}
             </div>
+
+            <NavLink
+              href="/monthly-performance"
+              icon={BarChart3}
+              isActive={pathname.startsWith('/monthly-performance')}
+            >
+              Performance
+            </NavLink>
 
             <NavLink href="/upload" icon={Upload} isActive={pathname === '/upload'}>
               Upload

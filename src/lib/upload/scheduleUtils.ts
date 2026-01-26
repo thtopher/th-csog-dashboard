@@ -183,6 +183,8 @@ export function buildThermometerData(
 
 /**
  * Generate calendar events for a given month
+ * Shows uploads on their period end date (when data should be ready)
+ * rather than the grace period due date
  */
 export function generateCalendarEvents(
   year: number,
@@ -201,17 +203,48 @@ export function generateCalendarEvents(
     const exec = DEFAULT_EXECUTIVES.find((e) => e.id === scheduleItem.executiveId);
     if (!exec) continue;
 
-    // Calculate due date for this period
-    const dueDate = calculateDueDate(scheduleItem, monthStart);
+    if (scheduleItem.cadence === 'weekly') {
+      // For weekly uploads, show on each Wednesday (end of week + 3 days)
+      for (const day of days) {
+        const weekEnd = endOfWeek(day, { weekStartsOn: 1 });
+        const displayDate = addDays(weekEnd, scheduleItem.daysAfterPeriodEnd);
 
-    // Only include if due date falls within this month
-    if (isWithinInterval(dueDate, { start: monthStart, end: monthEnd })) {
+        // Check if this is a unique date within the month
+        if (
+          isWithinInterval(displayDate, { start: monthStart, end: monthEnd }) &&
+          !events.some(
+            (e) =>
+              e.date === format(displayDate, 'yyyy-MM-dd') &&
+              e.uploadTypeId === scheduleItem.uploadTypeId &&
+              e.executiveId === scheduleItem.executiveId
+          )
+        ) {
+          const isCompleted = completedUploads.has(
+            `${scheduleItem.executiveId}-${scheduleItem.uploadTypeId}-${format(displayDate, 'yyyy-MM-dd')}`
+          );
+
+          events.push({
+            date: format(displayDate, 'yyyy-MM-dd'),
+            executiveId: scheduleItem.executiveId,
+            executiveName: exec.name || '',
+            uploadTypeId: scheduleItem.uploadTypeId,
+            uploadTypeName: scheduleItem.uploadTypeName,
+            status: getUploadStatus(displayDate, today, isCompleted),
+            cadence: scheduleItem.cadence,
+          });
+        }
+      }
+    } else if (scheduleItem.cadence === 'monthly') {
+      // For monthly uploads, show on the last day of the month
+      // This is when the data period ends and upload should be prepared
+      const displayDate = monthEnd;
+      const dueDate = addDays(displayDate, scheduleItem.daysAfterPeriodEnd);
       const isCompleted = completedUploads.has(
         `${scheduleItem.executiveId}-${scheduleItem.uploadTypeId}`
       );
 
       events.push({
-        date: format(dueDate, 'yyyy-MM-dd'),
+        date: format(displayDate, 'yyyy-MM-dd'),
         executiveId: scheduleItem.executiveId,
         executiveName: exec.name || '',
         uploadTypeId: scheduleItem.uploadTypeId,
@@ -219,37 +252,26 @@ export function generateCalendarEvents(
         status: getUploadStatus(dueDate, today, isCompleted),
         cadence: scheduleItem.cadence,
       });
-    }
+    } else if (scheduleItem.cadence === 'quarterly') {
+      // For quarterly uploads, show on the last day of the quarter
+      // Only if this month is the last month of a quarter (March, June, Sept, Dec)
+      const quarterEndMonth = month - (month % 3) + 2; // 2, 5, 8, 11 (0-indexed)
+      if (month === quarterEndMonth) {
+        const displayDate = endOfQuarter(monthStart);
+        const dueDate = addDays(displayDate, scheduleItem.daysAfterPeriodEnd);
+        const isCompleted = completedUploads.has(
+          `${scheduleItem.executiveId}-${scheduleItem.uploadTypeId}`
+        );
 
-    // For weekly uploads, add events for each week in the month
-    if (scheduleItem.cadence === 'weekly') {
-      for (const day of days) {
-        const weekDueDate = calculateDueDate(scheduleItem, day);
-
-        // Check if this is a unique due date within the month
-        if (
-          isWithinInterval(weekDueDate, { start: monthStart, end: monthEnd }) &&
-          !events.some(
-            (e) =>
-              e.date === format(weekDueDate, 'yyyy-MM-dd') &&
-              e.uploadTypeId === scheduleItem.uploadTypeId &&
-              e.executiveId === scheduleItem.executiveId
-          )
-        ) {
-          const isCompleted = completedUploads.has(
-            `${scheduleItem.executiveId}-${scheduleItem.uploadTypeId}-${format(weekDueDate, 'yyyy-MM-dd')}`
-          );
-
-          events.push({
-            date: format(weekDueDate, 'yyyy-MM-dd'),
-            executiveId: scheduleItem.executiveId,
-            executiveName: exec.name || '',
-            uploadTypeId: scheduleItem.uploadTypeId,
-            uploadTypeName: scheduleItem.uploadTypeName,
-            status: getUploadStatus(weekDueDate, today, isCompleted),
-            cadence: scheduleItem.cadence,
-          });
-        }
+        events.push({
+          date: format(displayDate, 'yyyy-MM-dd'),
+          executiveId: scheduleItem.executiveId,
+          executiveName: exec.name || '',
+          uploadTypeId: scheduleItem.uploadTypeId,
+          uploadTypeName: scheduleItem.uploadTypeName,
+          status: getUploadStatus(dueDate, today, isCompleted),
+          cadence: scheduleItem.cadence,
+        });
       }
     }
   }

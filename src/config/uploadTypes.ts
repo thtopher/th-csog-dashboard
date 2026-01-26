@@ -17,6 +17,9 @@ import {
   Wallet,
   CreditCard,
   Calendar,
+  TrendingUp,
+  Calculator,
+  Receipt,
 } from 'lucide-react';
 
 export interface UploadType {
@@ -27,6 +30,9 @@ export interface UploadType {
   template: string;
   allowedExecutives: string[];  // Executive IDs that can upload this type
   sourceProcesses: string[];    // Process codes this feeds into
+  requiresConfirmation?: boolean; // If true, show confirmation modal after upload
+  confirmationFields?: string[]; // Fields to confirm manually after upload
+  mpaFileType?: 'proforma' | 'compensation' | 'hours' | 'expenses' | 'pnl'; // For MPA upload wizard
 }
 
 export const UPLOAD_TYPES: UploadType[] = [
@@ -109,6 +115,15 @@ export const UPLOAD_TYPES: UploadType[] = [
     allowedExecutives: ['exec-cgo'],
     sourceProcesses: ['BD'],
   },
+  {
+    id: 'notion_pipeline',
+    name: 'Pipeline Export (Notion)',
+    description: 'Notion database export with prospects and probability levels',
+    icon: Target,
+    template: 'notion_pipeline_template.csv',
+    allowedExecutives: ['exec-cgo', 'exec-ceo'],
+    sourceProcesses: ['BD'],
+  },
 
   // CSO Upload Types
   {
@@ -160,6 +175,69 @@ export const UPLOAD_TYPES: UploadType[] = [
     allowedExecutives: ['exec-ceo'],
     sourceProcesses: ['F-SP', 'F-EOC'],
   },
+  {
+    id: 'excel_proforma',
+    name: 'Pro Forma Workbook',
+    description: 'Full Pro Forma with P&L and Cash Tracker - confirm key values after upload',
+    icon: TrendingUp,
+    template: 'proforma_template.xlsx',
+    allowedExecutives: ['exec-cfo', 'exec-ceo', 'exec-president'],
+    sourceProcesses: ['CF', 'FR'],
+    requiresConfirmation: true,
+    confirmationFields: ['cashProjection6Mo', 'baseRevenue', 'netIncomeMargin'],
+  },
+
+  // Monthly Performance Analysis (MPA) Upload Types
+  {
+    id: 'mpa_proforma',
+    name: 'MPA Pro Forma Workbook',
+    description: 'Pro Forma with revenue by project code and allocation tags for MPA analysis',
+    icon: TrendingUp,
+    template: 'mpa_proforma_template.xlsx',
+    allowedExecutives: ['exec-cfo', 'exec-ceo', 'exec-president'],
+    sourceProcesses: ['MPA'],
+    mpaFileType: 'proforma',
+  },
+  {
+    id: 'mpa_compensation',
+    name: 'MPA Compensation File',
+    description: 'Staff compensation data with hourly rates for labor cost calculation',
+    icon: Calculator,
+    template: 'mpa_compensation_template.xlsx',
+    allowedExecutives: ['exec-cfo', 'exec-ceo'],
+    sourceProcesses: ['MPA'],
+    mpaFileType: 'compensation',
+  },
+  {
+    id: 'mpa_hours',
+    name: 'MPA Harvest Hours',
+    description: 'Harvest time tracking export for the analysis month',
+    icon: Clock,
+    template: 'mpa_hours_template.xlsx',
+    allowedExecutives: ['exec-coo', 'exec-cfo'],
+    sourceProcesses: ['MPA'],
+    mpaFileType: 'hours',
+  },
+  {
+    id: 'mpa_expenses',
+    name: 'MPA Harvest Expenses',
+    description: 'Harvest expenses export with billable/non-billable filtering',
+    icon: Receipt,
+    template: 'mpa_expenses_template.xlsx',
+    allowedExecutives: ['exec-coo', 'exec-cfo'],
+    sourceProcesses: ['MPA'],
+    mpaFileType: 'expenses',
+  },
+  {
+    id: 'mpa_pnl',
+    name: 'MPA P&L Statement',
+    description: 'QuickBooks P&L export for overhead pool calculation',
+    icon: DollarSign,
+    template: 'mpa_pnl_template.xlsx',
+    allowedExecutives: ['exec-cfo', 'exec-ceo'],
+    sourceProcesses: ['MPA'],
+    mpaFileType: 'pnl',
+  },
 ];
 
 /**
@@ -205,4 +283,35 @@ export function canUploadType(
   if (!uploadType) return false;
 
   return uploadType.allowedExecutives.includes(executiveId);
+}
+
+/**
+ * Get all MPA upload types for the upload wizard
+ */
+export function getMPAUploadTypes(): UploadType[] {
+  return UPLOAD_TYPES.filter((type) => type.mpaFileType !== undefined);
+}
+
+/**
+ * Get MPA upload type by file type
+ */
+export function getMPAUploadTypeByFileType(
+  fileType: 'proforma' | 'compensation' | 'hours' | 'expenses' | 'pnl'
+): UploadType | undefined {
+  return UPLOAD_TYPES.find((type) => type.mpaFileType === fileType);
+}
+
+/**
+ * Check if user can access MPA features
+ */
+export function canAccessMPA(
+  executiveId: string | undefined,
+  isAdmin: boolean
+): boolean {
+  if (isAdmin) return true;
+  if (!executiveId) return false;
+
+  // MPA access is limited to specific executives
+  const mpaExecutives = ['exec-cfo', 'exec-ceo', 'exec-president', 'exec-coo'];
+  return mpaExecutives.includes(executiveId);
 }

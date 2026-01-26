@@ -12,6 +12,7 @@ interface UploadCalendarCellProps {
   events: CalendarEvent[];
   isToday?: boolean;
   isCurrentMonth?: boolean;
+  onClick?: () => void;
 }
 
 function StatusIcon({ status, size = 10 }: { status: UploadStatus; size?: number }) {
@@ -42,6 +43,7 @@ export function UploadCalendarCell({
   events,
   isToday = false,
   isCurrentMonth = true,
+  onClick,
 }: UploadCalendarCellProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -62,15 +64,20 @@ export function UploadCalendarCell({
 
   const hasOverdue = events.some((e) => e.status === 'overdue');
   const hasPending = events.some((e) => e.status === 'pending');
+  const hasEvents = events.length > 0;
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
       className={cn(
-        'relative h-20 p-1 border-r border-b border-gray-100 transition-colors',
+        'relative h-20 p-1 border-r border-b border-gray-100 transition-colors text-left w-full',
         !isCurrentMonth && 'bg-gray-50 opacity-50',
         isToday && 'bg-blue-50 ring-1 ring-inset ring-blue-200',
         hasOverdue && 'bg-red-50',
-        hasPending && !hasOverdue && 'bg-amber-50'
+        hasPending && !hasOverdue && 'bg-amber-50',
+        hasEvents && 'hover:ring-2 hover:ring-inset hover:ring-gray-300 cursor-pointer',
+        !hasEvents && 'cursor-default'
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -136,7 +143,7 @@ export function UploadCalendarCell({
       {isHovered && events.length > 0 && (
         <CalendarCellTooltip date={date} events={events} />
       )}
-    </div>
+    </button>
   );
 }
 

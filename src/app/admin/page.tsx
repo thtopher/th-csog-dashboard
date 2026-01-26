@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { AdminOverview } from '@/components/dashboard/AdminOverview';
 import { OperatingRhythmView } from '@/components/dashboard/OperatingRhythmView';
+import { StatCard, StatCardModal } from '@/components/dashboard/StatCardModal';
 import { SpreadsheetViewer } from '@/components/uploads';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUploadTypeById } from '@/config/uploadTypes';
@@ -61,6 +62,9 @@ export default function AdminPage() {
 
   // Spreadsheet viewer state
   const [viewingUpload, setViewingUpload] = useState<UploadRecord | null>(null);
+
+  // Stat card modal state
+  const [activeStatModal, setActiveStatModal] = useState<'uploads' | 'compliance' | 'pending' | 'executives' | null>(null);
 
   // Check for admin access
   useEffect(() => {
@@ -236,55 +240,51 @@ export default function AdminPage() {
           </p>
         </div>
 
-        {/* Summary Stats */}
+        {/* Summary Stats - Interactive Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg border p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Upload size={18} className="text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{totalCompleted}/{totalRequired}</p>
-                <p className="text-sm text-gray-500">Uploads This Period</p>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            type="uploads"
+            value={`${totalCompleted}/${totalRequired}`}
+            label="Uploads This Period"
+            tooltipText="Weekly & monthly uploads only. Quarterly uploads tracked separately."
+            onClick={() => setActiveStatModal('uploads')}
+            icon={Upload}
+            iconBgColor="bg-blue-100"
+            iconColor="text-blue-600"
+          />
 
-          <div className="bg-white rounded-lg border p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <BarChart3 size={18} className="text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{overallComplianceRate}%</p>
-                <p className="text-sm text-gray-500">Compliance Rate</p>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            type="compliance"
+            value={`${overallComplianceRate}%`}
+            label="Compliance Rate"
+            tooltipText="Percentage of required uploads completed this period."
+            onClick={() => setActiveStatModal('compliance')}
+            icon={BarChart3}
+            iconBgColor="bg-green-100"
+            iconColor="text-green-600"
+          />
 
-          <div className="bg-white rounded-lg border p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Users size={18} className="text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{executivesWithPending}</p>
-                <p className="text-sm text-gray-500">Pending Uploads</p>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            type="pending"
+            value={executivesWithPending}
+            label="Pending Uploads"
+            tooltipText={`${executivesWithPending} executive${executivesWithPending !== 1 ? 's' : ''} with outstanding uploads.`}
+            onClick={() => setActiveStatModal('pending')}
+            icon={Users}
+            iconBgColor="bg-amber-100"
+            iconColor="text-amber-600"
+          />
 
-          <div className="bg-white rounded-lg border p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Shield size={18} className="text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">7</p>
-                <p className="text-sm text-gray-500">Active Executives</p>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            type="executives"
+            value={DEFAULT_EXECUTIVES.length}
+            label="Active Executives"
+            tooltipText="Executives with assigned upload responsibilities."
+            onClick={() => setActiveStatModal('executives')}
+            icon={Shield}
+            iconBgColor="bg-purple-100"
+            iconColor="text-purple-600"
+          />
         </div>
 
         {/* Quick Actions */}
@@ -434,6 +434,18 @@ export default function AdminPage() {
           uploaderName={viewingUpload.uploaderName}
           uploadedAt={viewingUpload.uploadedAt}
           onClose={() => setViewingUpload(null)}
+        />
+      )}
+
+      {/* Stat Card Detail Modal */}
+      {activeStatModal && (
+        <StatCardModal
+          type={activeStatModal}
+          isOpen={true}
+          onClose={() => setActiveStatModal(null)}
+          compliance={compliance}
+          totalCompleted={totalCompleted}
+          totalRequired={totalRequired}
         />
       )}
     </div>

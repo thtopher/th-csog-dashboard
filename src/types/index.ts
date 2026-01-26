@@ -277,6 +277,10 @@ export interface CEOScorecard {
   pipelineHealth: {
     pipelineValue: number;
     pipelineValueChange?: number;
+    pipelineTotalProjected?: number;       // Total projected pipeline value (unweighted)
+    pipelineTotalProjectedChange?: number;
+    pipelineWeighted?: number;              // Probability-weighted pipeline value
+    pipelineWeightedChange?: number;
     winRate: number;
     winRateChange?: number;
     status: HealthStatus;
@@ -291,11 +295,19 @@ export interface CEOScorecard {
   margin: {
     contractMargin: number;
     contractMarginChange?: number;
+    baseRevenue?: number;                   // EOY base revenue forecast
+    baseRevenueChange?: number;
+    netIncome?: number;                     // Projected net income
+    netIncomeChange?: number;
+    marginPercent?: number;                 // Net income / base revenue
+    marginPercentChange?: number;
     status: HealthStatus;
   };
   cash: {
     cashPosition: number;
     cashPositionChange?: number;
+    cashProjection6Mo?: number;             // 6-month forward cash projection
+    cashProjection6MoChange?: number;
     dso: number;
     dsoChange?: number;
     ar90Plus: number;

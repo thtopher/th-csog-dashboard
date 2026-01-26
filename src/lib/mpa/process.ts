@@ -347,9 +347,9 @@ async function saveResults(
     const hdRows = hoursDetail.map(hd => ({
       batch_id: batchId,
       contract_code: hd.contractCode,
-      employee_name: hd.staffKey,
+      staff_key: hd.staffKey,
       hours: hd.hours,
-      hourly_rate: hd.hourlyCost,
+      hourly_cost: hd.hourlyCost,
       labor_cost: hd.laborCost,
     }));
 
@@ -372,21 +372,21 @@ async function saveResults(
     if (error) throw new Error(`Failed to save expense detail: ${error.message}`);
   }
 
-  // Save pools detail
-  const poolsRows = [
-    { batch_id: batchId, pool_name: 'SGA', source_contract_code: 'P&L', source_description: 'From P&L SGA bucket', labor_cost: 0, expense_cost: pools.sgaFromPnl, total_cost: pools.sgaFromPnl },
-    { batch_id: batchId, pool_name: 'DATA', source_contract_code: 'P&L', source_description: 'From P&L DATA bucket', labor_cost: 0, expense_cost: pools.dataFromPnl, total_cost: pools.dataFromPnl },
-    { batch_id: batchId, pool_name: 'WORKPLACE', source_contract_code: 'P&L', source_description: 'From P&L WORKPLACE bucket', labor_cost: 0, expense_cost: pools.workplaceFromPnl, total_cost: pools.workplaceFromPnl },
-  ];
+  // Save pools detail (single row per batch with all pool values)
+  const poolsRow = {
+    batch_id: batchId,
+    sga_from_pnl: pools.sgaFromPnl,
+    data_from_pnl: pools.dataFromPnl,
+    workplace_from_pnl: pools.workplaceFromPnl,
+    nil_excluded: pools.nilExcluded || 0,
+    sga_from_cc: pools.sgaFromCc,
+    data_from_cc: pools.dataFromCc,
+    total_revenue: taggedRevenue.totalRevenue,
+    data_tagged_revenue: taggedRevenue.dataTaggedRevenue,
+    wellness_tagged_revenue: taggedRevenue.wellnessTaggedRevenue,
+  };
 
-  if (pools.sgaFromCc > 0) {
-    poolsRows.push({ batch_id: batchId, pool_name: 'SGA', source_contract_code: 'Cost Centers', source_description: 'From cost center overhead', labor_cost: pools.sgaFromCc, expense_cost: 0, total_cost: pools.sgaFromCc });
-  }
-  if (pools.dataFromCc > 0) {
-    poolsRows.push({ batch_id: batchId, pool_name: 'DATA', source_contract_code: 'Cost Centers', source_description: 'From cost center overhead', labor_cost: pools.dataFromCc, expense_cost: 0, total_cost: pools.dataFromCc });
-  }
-
-  const { error: poolsError } = await supabase.from('mpa_pools_detail').insert(poolsRows);
+  const { error: poolsError } = await supabase.from('mpa_pools_detail').insert([poolsRow]);
   if (poolsError) throw new Error(`Failed to save pools detail: ${poolsError.message}`);
 
   // Update batch with summary

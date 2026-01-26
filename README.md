@@ -1,12 +1,10 @@
-# Third Horizon CSOG Dashboard
+# Third Horizon Executive Dashboard
 
-A Third Horizon–branded, web-based control center for executive and CSOG team members to monitor firm operational health, aligned with the official Third Horizon Standard Operating Procedures.
+A Next.js web application for executive and CSOG team members to monitor firm operational health, aligned with Third Horizon Standard Operating Procedures.
 
-**Current Version:** v2.0 (January 2026) — Executive-Centric Dashboard with SOP Alignment
+**Current Version:** v2.1 (January 2026)
 
-## Overview
-
-The dashboard provides an executive-centric view of firm operations:
+## Features
 
 ### CEO Scorecard
 Four key performance categories monitored at the firm level:
@@ -15,84 +13,72 @@ Four key performance categories monitored at the firm level:
 - **Financial Discipline** — AR aging, cash position, month-close timing
 - **Operational Efficiency** — Harvest compliance, training completion
 
-### Executive Tiles
-Each of 7 C-Suite executives has a dedicated view showing:
-- **Processes owned** — Operational processes (BD, SD, CF, etc.)
-- **Functions governed** — Governance functions (F-EOC, F-SP, F-BC, etc.)
-- **RACI Matrix** — 154 tasks with Responsible/Accountable/Consulted/Informed roles
-- **Health status** — Real-time gaps requiring attention
+### Executive Views
+Each of 7 C-Suite executives has a dedicated dashboard showing:
+- Processes owned and functions governed
+- RACI Matrix with 154 tasks
+- Real-time health status and gaps requiring attention
 
-### Key Features
-- **Hover-over Definitions** — Tooltips explain all 41 process/function codes
-- **Click-through Auditability** — See how metrics are calculated, data sources, upload attribution
-- **Executive Logins** — 7 executives can log in and upload only their assigned data types
-- **SOP-Aligned Structure** — All processes, functions, and tasks mirror the official Third Horizon SOP
+### Monthly Performance Analysis (MPA)
+Project-level margin analysis with overhead allocation:
+- Upload 5 source files (Pro Forma, Compensation, Harvest Hours/Expenses, P&L)
+- Automatic classification into revenue centers, cost centers, and non-revenue clients
+- SG&A, Data, and Workplace overhead pool allocation
+- Margin calculations with validation checks
+- Drill-down by project and employee
 
-## Architecture
+### Upload Management
+- Calendar-based upload tracking with compliance status
+- Role-based upload permissions per executive
+- File storage via Supabase Storage
+- Upload history and attribution
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     PRESENTATION LAYER                              │
-│         Next.js + React + Tailwind + Recharts                       │
-└─────────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        API LAYER                                    │
-│              Next.js API Routes (REST)                              │
-└─────────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    DATA & STORAGE LAYER                             │
-│                      PostgreSQL                                     │
-└─────────────────────────────────────────────────────────────────────┘
-                                ▲
-                                │
-┌─────────────────────────────────────────────────────────────────────┐
-│                   INGESTION LAYER                                   │
-│         Excel Parser (Python) → Future: NetSuite, Notion            │
-└─────────────────────────────────────────────────────────────────────┘
-```
+## Tech Stack
+
+- **Framework:** Next.js 16 with App Router
+- **UI:** React 19, Tailwind CSS 4, Radix UI
+- **Database:** Supabase (PostgreSQL)
+- **Storage:** Supabase Storage
+- **Auth:** NextAuth.js with Azure AD (or demo mode)
+- **Charts:** Recharts
+- **Excel Parsing:** SheetJS (xlsx)
 
 ## Project Structure
 
 ```
 th-csog-dashboard/
 ├── src/
-│   ├── app/                    # Next.js app router pages
+│   ├── app/
 │   │   ├── api/
-│   │   │   ├── executives/     # Executive data endpoints
-│   │   │   ├── tasks/          # Task management endpoints
-│   │   │   ├── health/         # Health check endpoint
-│   │   │   └── data/           # Data upload endpoint
-│   │   ├── executive/          # Executive detail pages
-│   │   ├── upload/             # Data upload page
-│   │   ├── login/              # Authentication page
-│   │   ├── page.tsx            # Main dashboard (CEO Scorecard + Tiles)
-│   │   └── layout.tsx          # Root layout
+│   │   │   ├── auth/             # NextAuth endpoints
+│   │   │   ├── executives/       # Executive data
+│   │   │   ├── mpa/              # Monthly Performance Analysis
+│   │   │   │   └── batches/      # Batch CRUD and processing
+│   │   │   ├── storage/          # File upload to Supabase
+│   │   │   └── uploads/          # Upload compliance tracking
+│   │   ├── executive/[id]/       # Executive detail pages
+│   │   ├── monthly-performance/  # MPA upload wizard and results
+│   │   ├── upload/               # Data upload page
+│   │   └── page.tsx              # CEO Scorecard
 │   ├── components/
-│   │   ├── common/             # CodeTooltip, shared UI
-│   │   ├── dashboard/          # CEOScorecard, ExecutiveTile, ScorecardDetailModal
-│   │   ├── raci/               # RACIMatrix component
-│   │   ├── layout/             # Header, navigation
-│   │   └── process/            # KPI visualization
+│   │   ├── dashboard/            # CEOScorecard, ExecutiveTile
+│   │   ├── layout/               # Header, navigation
+│   │   ├── monthly-performance/  # MPA components
+│   │   ├── timeline/             # Upload calendar
+│   │   └── uploads/              # Upload forms
 │   ├── config/
-│   │   ├── executives.ts       # Executive colors, initials
-│   │   ├── processDefinitions.ts  # All 41 process/function codes
-│   │   └── uploadTypes.ts      # Upload types with executive permissions
-│   ├── contexts/               # AuthContext with executive users
-│   ├── lib/                    # Utilities and database
-│   └── types/                  # TypeScript definitions
+│   │   ├── executives.ts         # Executive definitions
+│   │   ├── processDefinitions.ts # 41 process/function codes
+│   │   └── uploadTypes.ts        # Upload types with permissions
+│   ├── contexts/                 # AuthContext
+│   ├── lib/
+│   │   ├── mpa/                  # MPA processing pipeline
+│   │   ├── metrics/              # Metric calculations
+│   │   └── supabase/             # Database client
+│   └── types/                    # TypeScript definitions
 ├── database/
-│   ├── migrations/             # Schema (incl. 002_sop_alignment.sql)
-│   └── seeds/                  # Executive, process, task, RACI data
-├── docs/
-│   ├── Third_Horizon_SOP.md    # Official SOP documentation
-│   └── SOP_ALIGNMENT_ANALYSIS.md  # SOP-to-dashboard mapping
-├── scripts/
-│   └── ingestion/              # Python data ingestion scripts
-└── public/                     # Static assets
+│   └── migrations/               # SQL schema migrations
+└── public/                       # Static assets
 ```
 
 ## Getting Started
@@ -100,152 +86,135 @@ th-csog-dashboard/
 ### Prerequisites
 
 - Node.js 18+
-- npm or yarn
-- PostgreSQL 14+ (for production)
-- Python 3.10+ (for data ingestion scripts)
+- npm
+- Supabase account (for database and storage)
 
-### Installation
+### Local Development
 
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/thtopher/th-csog-dashboard.git
 cd th-csog-dashboard
-
-# Install Node.js dependencies
 npm install
 
-# Start the development server
+# Create environment file
+cp .env.example .env.local
+# Edit .env.local with your values (see Environment Variables below)
+
+# Start development server
 npm run dev
 ```
 
-The dashboard will be available at http://localhost:3000
+Open http://localhost:3000
 
-### Database Setup
+### Database Setup (Supabase)
 
-```bash
-# Create the database
-createdb th_csog_dashboard
+1. Create a new Supabase project
+2. Go to SQL Editor and run migrations in order:
+   - `database/migrations/001_initial_schema.sql`
+   - `database/migrations/002_sop_alignment.sql`
+   - `database/migrations/003_onboarding_uploads.sql`
+   - `database/migrations/004_file_storage.sql`
+   - `database/migrations/005_monthly_performance_analysis.sql`
+3. Create a storage bucket named `uploads`
 
-# Run migrations
-psql -d th_csog_dashboard -f database/migrations/001_initial_schema.sql
+### Vercel Deployment
 
-# Load seed data (optional, for development)
-psql -d th_csog_dashboard -f database/seeds/001_initial_data.sql
-```
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel Dashboard → Settings → Environment Variables:
 
-### Data Ingestion Setup
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
+| `NEXTAUTH_SECRET` | Random string for session encryption |
+| `NEXTAUTH_URL` | Your production URL |
+| `NEXT_PUBLIC_DEMO_MODE` | Set to `true` for demo login |
 
-```bash
-# Navigate to ingestion scripts
-cd scripts/ingestion
+For Azure AD authentication (optional):
+| Variable | Description |
+|----------|-------------|
+| `AZURE_AD_CLIENT_ID` | Azure AD application client ID |
+| `AZURE_AD_CLIENT_SECRET` | Azure AD client secret |
+| `AZURE_AD_TENANT_ID` | Azure AD tenant ID |
 
-# Install Python dependencies
-pip install -r requirements.txt
+## Environment Variables
 
-# Run ingestion (example)
-python excel_parser.py path/to/harvest_data.xlsx --type excel_harvest --dry-run
+Create `.env.local` for local development:
+
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=generate-with-openssl-rand-base64-32
+
+# Demo Mode (set to true to enable demo login)
+NEXT_PUBLIC_DEMO_MODE=true
+
+# Azure AD (optional - for production SSO)
+AZURE_AD_CLIENT_ID=
+AZURE_AD_CLIENT_SECRET=
+AZURE_AD_TENANT_ID=
 ```
 
 ## API Endpoints
 
+### Core
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/health` | GET | Health check |
-| `/api/executives` | GET | All executives with CEO scorecard |
-| `/api/executives/[id]` | GET | Executive detail with processes/functions |
-| `/api/tasks` | GET | Task data with RACI assignments |
-| `/api/kpis/process/[id]` | GET | Process-level KPI detail |
-| `/api/data/upload` | POST | Excel file upload with attribution |
+| `/api/executives` | GET | All executives with scorecard data |
+| `/api/executives/[id]` | GET | Executive detail |
+| `/api/metrics` | GET | Dashboard metrics |
 
-## Key Features
+### Uploads
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/uploads/compliance` | GET | Upload compliance by period |
+| `/api/storage/upload` | POST | Upload file to Supabase Storage |
+| `/api/data/upload` | POST | Process uploaded data file |
 
-### Version 2.0 (Current - January 2026)
-- [x] Executive-centric dashboard architecture
-- [x] CEO Scorecard with 4 health categories
-- [x] 7 Executive tiles with process/function badges
-- [x] RACI Matrix for all 154 SOP tasks
-- [x] Hover-over tooltips for 41 process/function codes
-- [x] Click-through auditability with calculation formulas
-- [x] Executive login system with role-based permissions
-- [x] SOP documentation integrated (docs/Third_Horizon_SOP.md)
-- [x] Database seeds aligned with official SOP
-- [ ] Database integration (PostgreSQL)
-- [ ] NetSuite/Notion connectors
-
-### Planned Enhancements
-- [ ] Real-time data from source systems
-- [ ] Threshold alerts for KPI deviations
-- [ ] Historical trend analysis
-- [ ] Board meeting preparation views
-- [ ] Mobile-responsive executive views
+### Monthly Performance Analysis
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/mpa/batches` | GET | List MPA batches |
+| `/api/mpa/batches` | POST | Create new batch |
+| `/api/mpa/batches/[id]` | GET | Get batch details |
+| `/api/mpa/batches/[id]` | PATCH | Update batch (file paths) |
+| `/api/mpa/batches/[id]/process` | POST | Run analysis pipeline |
+| `/api/mpa/batches/[id]/results` | GET | Get analysis results |
 
 ## Demo Accounts
 
-The application includes 9 demo accounts for testing (password: `demo` for all):
+When `NEXT_PUBLIC_DEMO_MODE=true`, these accounts are available (password: `demo`):
 
-| Email | Role | Upload Access |
-|-------|------|---------------|
-| david@thirdhorizon.com | CEO | F-EOC, Strategic Planning data |
+| Email | Role | Access |
+|-------|------|--------|
+| david@thirdhorizon.com | CEO | Full dashboard, F-EOC data |
 | greg@thirdhorizon.com | President | Cash Flow data |
 | jordana@thirdhorizon.com | COO | Harvest, Training, Staffing |
-| aisha@thirdhorizon.com | CFO | AR, AP, Month-Close |
+| aisha@thirdhorizon.com | CFO | AR, AP, Month-Close, MPA |
 | chris@thirdhorizon.com | CDAO | Starset, HMRF data |
 | cheryl@thirdhorizon.com | CGO | BD Pipeline |
 | ashley@thirdhorizon.com | CSO | Delivery, Contracts |
-| topher@thirdhorizon.com | Admin | All upload types |
+| topher@thirdhorizon.com | Admin | All access |
 | demo@thirdhorizon.com | Staff | Read-only |
 
-## Excel Templates
-
-See [docs/excel-templates.md](docs/excel-templates.md) for detailed specifications of the Excel file formats used for data upload:
-- Harvest Compliance
-- Training Status
-- Billable Hours
-
-## Environment Variables
-
-Create a `.env.local` file in the project root:
-
-```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/th_csog_dashboard
-
-# Authentication (future)
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-here
-
-# Optional: External APIs (future)
-NETSUITE_ACCOUNT_ID=
-NETSUITE_TOKEN_ID=
-NOTION_API_KEY=
-```
-
-## Development
+## Development Scripts
 
 ```bash
-# Run development server
-npm run dev
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-
-# Build for production
-npm run build
+npm run dev        # Development server
+npm run build      # Production build
+npm run start      # Production server
+npm run lint       # ESLint
+npm run test       # Run tests
+npm run test:watch # Watch mode tests
 ```
-
-## Deployment
-
-The application is designed for deployment on:
-- **Vercel** (recommended for Next.js)
-- **Railway** or **Render** (for database)
-- **Docker** (self-hosted option)
-
-## Contributing
-
-This is an internal Third Horizon project. For questions or contributions, contact the development team.
 
 ## License
 

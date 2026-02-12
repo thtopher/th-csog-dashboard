@@ -417,7 +417,7 @@ th-csog-dashboard/
 
 The MPA pipeline computes project-level profitability by combining revenue data from the Pro Forma with labor costs from Harvest hours and compensation, direct expenses from Harvest, and overhead allocations from the P&L statement.
 
-The TypeScript implementation in `src/lib/mpa/` mirrors the standalone Python analysis at `/Users/topher416/TH Monthly Performance Analysis` with identical classification, allocation, and validation logic.
+The TypeScript implementation in `src/lib/mpa/` mirrors the standalone Python analysis at `thtopher/TH Monthly Performance Analysis` with identical classification, allocation, and validation logic.
 
 ### Pipeline Flow
 

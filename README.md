@@ -929,7 +929,7 @@ Additional cost centers are auto-classified at runtime: any `THS-` prefixed code
 | Code | Name |
 |------|------|
 | BEH | Behavioral Health |
-| PAD | Performance Analytics |
+| PAD | Payment Analytics |
 | MAR | Market Research |
 | WWB | Workplace Well-Being |
 | CMH | Community Health |

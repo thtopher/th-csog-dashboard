@@ -7,7 +7,7 @@
 // Map Pro Forma section names to analysis categories
 export const CATEGORY_MAPPING: Record<string, string> = {
   'BEH': 'Behavioral Health',
-  'PAD': 'Performance Analytics',
+  'PAD': 'Payment Analytics',
   'MAR': 'Market Research',
   'WWB': 'Workplace Well-Being',
   'CMH': 'Community Health',

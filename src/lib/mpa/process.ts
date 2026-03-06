@@ -285,6 +285,16 @@ async function saveResults(
   summary: AnalysisSummary,
   validation: ValidationItem[]
 ): Promise<void> {
+  // Delete prior results for re-run safety
+  const childTables = [
+    'mpa_revenue_centers', 'mpa_cost_centers', 'mpa_non_revenue_clients',
+    'mpa_hours_detail', 'mpa_expenses_detail', 'mpa_pools_detail',
+  ];
+  for (const table of childTables) {
+    const { error: delError } = await supabase.from(table).delete().eq('batch_id', batchId);
+    if (delError) throw new Error(`Failed to clear ${table}: ${delError.message}`);
+  }
+
   // Save revenue centers
   if (revenueCenters.length > 0) {
     const rcRows = revenueCenters.map(rc => ({
@@ -362,10 +372,9 @@ async function saveResults(
     const edRows = expenseDetail.map(ed => ({
       batch_id: batchId,
       contract_code: ed.contractCode,
-      expense_category: null,
-      notes: ed.notes,
+      expense_date: ed.expenseDate?.toISOString() ?? null,
       amount: ed.amount,
-      is_billable: false,
+      notes: ed.notes ?? null,
     }));
 
     const { error } = await supabase.from('mpa_expenses_detail').insert(edRows);

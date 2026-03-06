@@ -5,11 +5,16 @@ import { createClient } from '@supabase/supabase-js';
 import { calculateMetricsFromUpload } from '@/lib/metrics/calculateMetrics';
 import { getUploadTypeById } from '@/config/uploadTypes';
 import * as XLSX from 'xlsx';
+import { requireAuth } from '@/lib/auth/helpers';
 
-// Create server-side client with service role key (bypasses RLS)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Supabase not configured');
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 // In-memory store for upload history (fallback when Supabase not configured)
 const uploadHistory: Map<string, {
@@ -38,6 +43,9 @@ const uploadHistory: Map<string, {
  * - action=commit: Validate again, save to DB and storage, return success
  */
 export async function POST(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const formData = await request.formData();
     const action = formData.get('action') as string || 'commit';
@@ -178,6 +186,7 @@ export async function POST(request: Request) {
 
     // Also try to save to Supabase DB
     try {
+      const supabase = getSupabaseClient();
       const { error: dbError } = await supabase.from('upload_history').insert({
         id: ingestionId,
         upload_type: sourceType!,
@@ -228,6 +237,7 @@ export async function POST(request: Request) {
           details: metric.details || null,
         }));
 
+        const supabase = getSupabaseClient();
         const { error: metricsError } = await supabase
           .from('calculated_metrics')
           .insert(metricsToInsert);
@@ -277,15 +287,19 @@ export async function POST(request: Request) {
  * Returns recent upload history for the current user
  */
 export async function GET(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
     const executiveId = searchParams.get('executiveId');
     const limit = parseInt(searchParams.get('limit') || '10');
-    const includeAll = searchParams.get('all') === 'true'; // For admin view
+    const includeAll = session.user.role === 'admin'; // Admin sees all uploads
 
     // Try to fetch from Supabase DB first
     try {
+      const supabase = getSupabaseClient();
       let query = supabase
         .from('upload_history')
         .select('*')

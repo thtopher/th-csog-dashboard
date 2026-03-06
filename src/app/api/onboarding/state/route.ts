@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 
 // In-memory store for demo (replace with Supabase in production)
 const onboardingStates = new Map<string, {
@@ -15,6 +16,9 @@ const onboardingStates = new Map<string, {
  * Returns the onboarding state for the current user
  */
 export async function GET(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     // Get user email from header (set by middleware in production)
     // For demo, we'll use a query param or default
@@ -53,6 +57,9 @@ export async function GET(request: Request) {
  * Updates the onboarding state for the current user
  */
 export async function PATCH(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { currentStep, stepCompleted, completed } = body;

@@ -87,9 +87,10 @@ export function loadProForma(
   const logs: string[] = [];
   const workbook = XLSX.read(buffer, { type: 'buffer' });
 
-  const sheetName = 'PRO FORMA 2025';
-  if (!workbook.SheetNames.includes(sheetName)) {
-    throw new Error(`Sheet '${sheetName}' not found in Pro Forma workbook`);
+  const sheetNamePattern = /pro\s*forma\s*\d{4}/i;
+  const sheetName = workbook.SheetNames.find(name => sheetNamePattern.test(name));
+  if (!sheetName) {
+    throw new Error(`No Pro Forma sheet found. Expected a sheet matching "PRO FORMA YYYY". Found: ${workbook.SheetNames.join(', ')}`);
   }
 
   const sheet = workbook.Sheets[sheetName];

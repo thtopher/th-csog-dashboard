@@ -3,10 +3,16 @@ import type { ExecutiveOverviewResponse, ExecutiveSummary, CEOScorecardWithAudit
 import { DEFAULT_EXECUTIVES } from '@/config/executives';
 import { createClient } from '@supabase/supabase-js';
 import { UPLOAD_TYPES } from '@/config/uploadTypes';
+import { requireAuth } from '@/lib/auth/helpers';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Supabase not configured');
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 // Map of executive IDs to their key metrics and thresholds
 const EXECUTIVE_METRICS: Record<string, { metricId: string; greenThreshold: number; amberThreshold: number; higherIsBetter: boolean }[]> = {
@@ -89,6 +95,7 @@ async function fetchUploadsByExecutive(): Promise<Map<string, Set<string>>> {
   const result = new Map<string, Set<string>>();
 
   try {
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('upload_history')
       .select('executive_id, upload_type')
@@ -118,6 +125,9 @@ async function fetchUploadsByExecutive(): Promise<Map<string, Set<string>>> {
  * This is the primary endpoint for the executive-centric dashboard view.
  */
 export async function GET(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const periodType = searchParams.get('periodType') || 'week';
 
@@ -480,6 +490,7 @@ interface MetricInfo {
 
 async function fetchLatestMetrics(): Promise<Record<string, MetricInfo>> {
   try {
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('calculated_metrics')
       .select('metric_id, value, calculated_at, source_upload_id')

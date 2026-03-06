@@ -71,10 +71,10 @@ export function getExecutiveInfo(executiveId: string) {
 }
 
 /**
- * Check if demo mode is enabled
+ * Check if demo mode is enabled (server-side only)
  */
 export function isDemoMode(): boolean {
-  return process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || !process.env.AZURE_AD_CLIENT_ID;
+  return process.env.DEMO_MODE_ENABLED === 'true' || !process.env.AZURE_AD_CLIENT_ID;
 }
 
 /**
@@ -97,8 +97,8 @@ export const authConfig: NextAuthConfig = {
       }),
     ] : []),
 
-    // Credentials provider for demo mode
-    Credentials({
+    // Credentials provider for demo mode (only active when DEMO_MODE_ENABLED=true)
+    ...(isDemoMode() ? [Credentials({
       id: 'demo-login',
       name: 'Demo Login',
       credentials: {
@@ -126,7 +126,7 @@ export const authConfig: NextAuthConfig = {
           title: demoUser.title,
         };
       },
-    }),
+    })] : []),
   ],
 
   callbacks: {

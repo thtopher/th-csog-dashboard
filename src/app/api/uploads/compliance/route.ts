@@ -6,16 +6,25 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 import { buildComplianceResponse, generateCalendarEvents, getPeriodStart, getPeriodEnd } from '@/lib/upload/scheduleUtils';
 import { UPLOAD_SCHEDULE } from '@/config/uploadSchedule';
 import { createClient } from '@supabase/supabase-js';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter } from 'date-fns';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Supabase not configured');
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 export async function GET(request: NextRequest) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const executiveId = searchParams.get('executiveId');
@@ -71,6 +80,7 @@ export async function GET(request: NextRequest) {
 async function fetchCompletedUploadsForCurrentPeriods(today: Date): Promise<Set<string>> {
   try {
     // Fetch all completed uploads with their period data
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('upload_history')
       .select('executive_id, upload_type, period_start, period_end, uploaded_at')

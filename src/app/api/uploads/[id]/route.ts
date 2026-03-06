@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 import { downloadFile, getSignedUrl } from '@/lib/supabase/storage';
 import { createClient } from '@supabase/supabase-js';
 
-// Create server-side client with service role key (bypasses RLS)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Supabase not configured');
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 interface UploadRecord {
   id: string;
@@ -30,12 +35,16 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
 
     // Fetch upload record from database
+    const supabase = getSupabaseClient();
     const { data: upload, error } = await supabase
       .from('upload_history')
       .select('*')

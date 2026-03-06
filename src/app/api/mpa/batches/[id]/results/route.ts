@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth/helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,9 @@ interface RouteParams {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const supabase = getSupabaseClient();

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Lazy initialization to avoid build-time errors when env vars aren't available
@@ -31,6 +32,9 @@ interface ProFormaMetrics {
  * These values are entered by the user after uploading the Pro Forma workbook.
  */
 export async function POST(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const {

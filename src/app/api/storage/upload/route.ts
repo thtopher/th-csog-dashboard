@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 import { createClient } from '@supabase/supabase-js';
 
 const BUCKET_NAME = 'uploads';
@@ -23,10 +24,12 @@ function getSupabaseClient() {
 }
 
 export async function POST(request: NextRequest) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const path = formData.get('path') as string;
 
     if (!file) {
       return NextResponse.json(
@@ -35,12 +38,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate file type and size
+    const allowedExtensions = ['.xlsx', '.xls', '.csv'];
+    const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || '');
+    if (!allowedExtensions.includes(ext)) {
+      return NextResponse.json(
+        { error: `File type ${ext} not allowed. Use: ${allowedExtensions.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: 'File exceeds 50MB limit' },
+        { status: 400 }
+      );
+    }
+
     const supabase = getSupabaseClient();
 
-    // Generate path if not provided
+    // Always generate server-controlled paths (never accept client-supplied paths)
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const uploadPath = path || `uploads/${timestamp}_${safeName}`;
+    const uploadPath = `uploads/${timestamp}_${safeName}`;
 
     // Convert File to Buffer
     const arrayBuffer = await file.arrayBuffer();

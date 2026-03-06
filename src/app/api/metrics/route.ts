@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth/helpers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -23,6 +24,9 @@ export interface MetricValue {
  * - metricIds: Optional comma-separated list of metric IDs to fetch
  */
 export async function GET(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const executiveId = searchParams.get('executiveId');

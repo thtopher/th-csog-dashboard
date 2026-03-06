@@ -16,6 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth/helpers';
 import { runAnalysis } from '@/lib/mpa';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +40,9 @@ interface RouteParams {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   const { id } = await params;
 
   try {
@@ -74,11 +78,27 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Update status to processing
-    await supabase
+    // Optimistic lock: only transition from pending/failed to processing
+    const { data: lockResult, error: lockError } = await supabase
       .from('mpa_analysis_batches')
       .update({ status: 'processing' })
-      .eq('id', id);
+      .eq('id', id)
+      .in('status', ['pending', 'failed'])
+      .select('id');
+
+    if (lockError) {
+      return NextResponse.json(
+        { error: `Failed to acquire lock: ${lockError.message}` },
+        { status: 500 }
+      );
+    }
+
+    if (!lockResult || lockResult.length === 0) {
+      return NextResponse.json(
+        { error: 'Batch is already being processed or has completed' },
+        { status: 409 }
+      );
+    }
 
     // Run the analysis pipeline
     const result = await runAnalysis(id);

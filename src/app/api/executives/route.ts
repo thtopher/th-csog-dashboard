@@ -3,6 +3,7 @@ import type { ExecutiveOverviewResponse, ExecutiveSummary, CEOScorecardWithAudit
 import { DEFAULT_EXECUTIVES } from '@/config/executives';
 import { createClient } from '@supabase/supabase-js';
 import { UPLOAD_TYPES } from '@/config/uploadTypes';
+import { requireAuth } from '@/lib/auth/helpers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -118,6 +119,9 @@ async function fetchUploadsByExecutive(): Promise<Map<string, Set<string>>> {
  * This is the primary endpoint for the executive-centric dashboard view.
  */
 export async function GET(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const periodType = searchParams.get('periodType') || 'week';
 

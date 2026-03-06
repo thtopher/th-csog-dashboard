@@ -29,6 +29,7 @@ npm start            # Production server
 npm run lint         # ESLint
 npm run test         # Run Vitest suite
 npm run test:watch   # Watch mode tests
+npx vitest run src/__tests__/<file>.test.ts  # Run a single test file
 ```
 
 ## Environment Variables
@@ -53,52 +54,47 @@ NEXT_PUBLIC_DEMO_MODE=true      # Enables demo login (password: "demo")
 
 ## Architecture
 
-```
-src/
-  app/
-    page.tsx                    # CEO Scorecard (main dashboard)
-    admin/                      # Admin panel
-    executive/[id]/             # Executive detail pages
-    monthly-performance/        # MPA upload wizard & results
-    upload/                     # Data upload page
-    login/                      # Auth page
-    onboarding/                 # First-run setup
-    settings/                   # User settings
-    api/                        # API routes (see below)
-  components/
-    dashboard/                  # CEO Scorecard, ExecutiveTile, GlobalFilters
-    monthly-performance/        # MPA upload wizard & results
-    timeline/                   # Upload calendar views
-    uploads/                    # Upload forms & file managers
-    onboarding/                 # Onboarding flow
-    raci/                       # RACI matrix display
-    layout/                     # Header, nav, sidebar
-    common/                     # Reusable UI elements
-  lib/
-    mpa/                        # MPA Processing Pipeline
-      process.ts                # Main orchestrator
-      loaders.ts                # Excel file parsing
-      classification.ts         # Project classification
-      allocations.ts            # Overhead allocation
-      computations.ts           # Margin calculations
-      validators.ts             # Data validation
-      config.ts                 # Constants
-      types.ts                  # Interfaces
-    auth/config.ts              # NextAuth config (SSO + demo mode)
-    supabase/                   # Client, server, storage, types
-  config/
-    executives.ts               # 7 C-Suite members
-    executiveScorecards.ts      # Scorecard metric categories & KPIs
-    processDefinitions.ts       # 41 SOP-aligned processes
-    uploadTypes.ts              # 14 upload types with permissions
-    uploadSchedule.ts           # Upload calendar scheduling
-  contexts/
-    AuthContext.tsx              # User auth state
-    TemporalContext.tsx          # Time period filtering
-database/
-  migrations/                   # 5 SQL migration files
-  seeds/                        # 6 seed files (executives, processes, RACI, KPIs)
-```
+### App Structure
+
+- `src/app/page.tsx` — CEO Scorecard (main dashboard)
+- `src/app/executive/[id]/` — Executive detail pages
+- `src/app/monthly-performance/` — MPA upload wizard & results
+- `src/app/upload/` — Data upload page
+- `src/app/admin/` — Admin panel
+- `src/app/login/`, `onboarding/`, `settings/` — Auth, first-run, user settings
+- `src/app/api/` — API routes (see Key API Routes below)
+
+### Provider Hierarchy
+
+Defined in `src/app/providers.tsx`, imported by `layout.tsx`:
+`SessionProvider` (NextAuth) → `AuthProvider` (`src/contexts/AuthContext.tsx`) → `TemporalProvider` (`src/contexts/TemporalContext.tsx`)
+
+### Key Libraries
+
+- `src/lib/mpa/` — MPA Processing Pipeline (see section below). Entry point: `process.ts`.
+- `src/lib/upload/` — Upload parsing pipeline: `parser.ts`, `mapper.ts`, `validator.ts`, `schemas.ts`, `scheduleUtils.ts`.
+- `src/lib/supabase/` — Two clients: `client.ts` (browser, anon key with RLS) and `server.ts` (API routes, service role key). `storage.ts` for file uploads. `types.ts` for generated DB types.
+- `src/lib/auth/config.ts` — NextAuth config (Microsoft Entra ID SSO + demo credential login).
+- `src/lib/metrics/calculateMetrics.ts` — Computes dashboard KPIs from uploaded Excel data.
+- `src/lib/utils/` — `cn.ts` (Tailwind class merging), `format.ts`, `dataSourceMapping.ts`.
+
+### Configuration Layer
+
+`src/config/` contains static definitions that drive the UI and business logic:
+- `src/config/executives.ts` — 7 C-Suite members
+- `src/config/executiveScorecards.ts` — Scorecard metric categories & KPIs
+- `src/config/processDefinitions.ts` — 41 SOP-aligned processes
+- `src/config/uploadTypes.ts` — 14 upload types with executive permissions
+- `src/config/uploadSchedule.ts` — Upload calendar scheduling
+- `src/config/domains.ts` — Domain configuration
+
+### Components
+
+`src/components/` subdirectories: `dashboard/`, `monthly-performance/`, `timeline/`, `uploads/`, `upload/` (mapper/preview/validation), `onboarding/`, `raci/`, `layout/`, `common/`, `domain/`, `process/`, `progress/`.
+
+### Tests
+
+Tests live in `src/__tests__/` and use Vitest. Config in `vitest.config.ts` (aliases `@` to `./src`).
 
 ## Key API Routes
 
@@ -110,10 +106,11 @@ database/
 - `GET /api/metrics` — Dashboard metrics
 - `POST /api/storage/upload` — File upload to Supabase Storage
 - `GET /api/uploads/compliance` — Upload compliance tracking
+- `POST /api/data/upload` — Process uploaded data files
 
 ## MPA Processing Pipeline
 
-The `src/lib/mpa/` module mirrors the standalone Python app at `/Users/topher416/TH Monthly Performance Analysis` but reimplemented in TypeScript for the web dashboard. Same 5-file ingestion, same classification/allocation/validation logic.
+Mirrors the standalone Python MPA application, reimplemented in TypeScript. Ingests 5 Excel files (Pro Forma, Compensation, Harvest Hours, Harvest Expenses, P&L) and runs classification → allocation → computation → validation. Business rules are documented in `docs/mpa-business-rules.md`.
 
 ## Authentication
 
@@ -134,7 +131,14 @@ The `src/lib/mpa/` module mirrors the standalone Python app at `/Users/topher416
 
 ## Database
 
-Supabase with 5 migrations covering: executives, users, SOP processes (41), RACI tasks (154), upload tracking, file storage, and MPA analysis tables (batches, revenue centers, cost centers, non-revenue clients, hours/expense detail).
+Supabase with 5 migrations (`database/migrations/`) covering: executives, users, SOP processes (41), RACI tasks (154), upload tracking, file storage, and MPA analysis tables. Seeds in `database/seeds/`.
+
+## Documentation
+
+- `docs/mpa-business-rules.md` — Detailed MPA pipeline rules and Excel parsing logic
+- `docs/excel-templates.md` — Expected Excel file formats
+- `docs/Third_Horizon_SOP.md` — Standard operating procedures
+- `docs/SOP_ALIGNMENT_ANALYSIS.md` — How dashboard processes map to SOPs
 
 ## Path Alias
 

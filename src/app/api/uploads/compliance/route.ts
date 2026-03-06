@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 import { buildComplianceResponse, generateCalendarEvents, getPeriodStart, getPeriodEnd } from '@/lib/upload/scheduleUtils';
 import { UPLOAD_SCHEDULE } from '@/config/uploadSchedule';
 import { createClient } from '@supabase/supabase-js';
@@ -16,6 +17,9 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function GET(request: NextRequest) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const executiveId = searchParams.get('executiveId');

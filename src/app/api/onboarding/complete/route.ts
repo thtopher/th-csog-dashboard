@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 
 /**
  * POST /api/onboarding/complete
  * Marks onboarding as complete for the current user
  */
 export async function POST(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const userEmail = body.email || 'demo@thirdhorizon.com';

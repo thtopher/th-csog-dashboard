@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 import { downloadFile, getSignedUrl } from '@/lib/supabase/storage';
 import { createClient } from '@supabase/supabase-js';
 
@@ -30,6 +31,9 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const { searchParams } = new URL(request.url);

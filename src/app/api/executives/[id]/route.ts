@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { ExecutiveDetailResponse, ProcessWithTasks, TaskWithRACI, HealthStatus, ProcessSummary } from '@/types';
 import { DEFAULT_EXECUTIVES, getExecutiveById } from '@/config/executives';
+import { requireAuth } from '@/lib/auth/helpers';
 
 // Process/function status from the overview API (should be synchronized)
 const PROCESS_STATUS: Record<string, HealthStatus> = {
@@ -27,6 +28,9 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   const { id } = await params;
 
   const executive = getExecutiveById(id);

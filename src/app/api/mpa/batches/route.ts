@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth/helpers';
 
 const BUCKET_NAME = 'uploads';
 
@@ -24,6 +25,9 @@ function getSupabaseClient() {
 }
 
 export async function POST(request: NextRequest) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { monthName, periodId, createdBy } = body;
@@ -86,11 +90,14 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const email = searchParams.get('email');
     const limit = parseInt(searchParams.get('limit') || '10', 10);
-    const isAdmin = searchParams.get('admin') === 'true';
+    const isAdmin = session.user.role === 'admin';
 
     const supabase = getSupabaseClient();
 

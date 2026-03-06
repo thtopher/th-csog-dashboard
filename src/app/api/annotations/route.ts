@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 import type { Annotation } from '@/types';
 
 /**
@@ -12,6 +13,9 @@ import type { Annotation } from '@/types';
  * - includeResolved: 'true' | 'false' (default: 'false')
  */
 export async function GET(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const targetType = searchParams.get('targetType');
   const targetId = searchParams.get('targetId');
@@ -43,6 +47,9 @@ export async function GET(request: Request) {
  * - content: string
  */
 export async function POST(request: Request) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { targetType, targetId, annotationType, title, content } = body;

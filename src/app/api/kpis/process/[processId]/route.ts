@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/helpers';
 import type { ProcessDetailResponse } from '@/types';
 
 /**
@@ -15,6 +16,9 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ processId: string }> }
 ) {
+  const { session, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   const { processId } = await params;
   const { searchParams } = new URL(request.url);
   const periodType = searchParams.get('periodType') || 'week';

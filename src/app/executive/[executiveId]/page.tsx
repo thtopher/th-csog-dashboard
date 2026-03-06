@@ -42,7 +42,13 @@ export default function ExecutiveDetailPage() {
       if (!skipLoadingState) setIsLoading(true);
       // Add cache-busting for fresh data
       const res = await fetch(`/api/executives/${executiveId}?_t=${Date.now()}`);
-      if (!res.ok) throw new Error('Executive not found');
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push('/login');
+          return;
+        }
+        throw new Error('Executive not found');
+      }
       const json = await res.json();
       setData(json);
       setError(null);

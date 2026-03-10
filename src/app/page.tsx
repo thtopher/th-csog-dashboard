@@ -56,8 +56,11 @@ export default function DashboardPage() {
         return;
       }
 
-      // CEO stays on main dashboard (this page)
-      // Staff/viewers also stay here for read-only view
+      // CEO and CSOG members default to CSOG Hub
+      if (user.executiveId === 'exec-ceo' || user.role === 'csog_member') {
+        router.push('/csog');
+        return;
+      }
     }
   }, [authLoading, isAuthenticated, user, router]);
 

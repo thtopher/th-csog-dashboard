@@ -25,6 +25,7 @@ import {
   Handshake,
   Shield,
   BarChart3,
+  Target,
 } from 'lucide-react';
 
 // Map executive IDs to appropriate icons
@@ -80,6 +81,11 @@ export function Header() {
                 CEO Scorecard
               </NavLink>
             )}
+
+            {/* CSOG Hub */}
+            <NavLink href="/csog" icon={Target} isActive={pathname.startsWith('/csog')}>
+              CSOG
+            </NavLink>
 
             {/* Executives Dropdown */}
             <div className="relative">

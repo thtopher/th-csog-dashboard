@@ -7,7 +7,7 @@
 -- The 7 C-suite roles per Third Horizon SOP
 -- ============================================
 INSERT INTO executives (id, name, title, role, email, display_order) VALUES
-    ('exec-ceo', 'David Smith', 'CEO', 'Business Oversight', 'david@thirdhorizon.com', 1),
+    ('exec-ceo', 'David Smith', 'CEO', 'Business Oversight', 'david.smith@thirdhorizon.com', 1),
     ('exec-president', 'Greg Williams', 'President', 'Client Operations', 'greg@thirdhorizon.com', 2),
     ('exec-coo', 'Jordana Choucair', 'COO', 'Business Operations', 'jordana@thirdhorizon.com', 3),
     ('exec-cfo', 'Aisha Waheed', 'CFO', 'Finance', 'aisha@thirdhorizon.com', 4),

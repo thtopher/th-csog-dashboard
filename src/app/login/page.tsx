@@ -251,7 +251,7 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => { setEmail('david@thirdhorizon.com'); setPassword('demo'); setError(''); }}
+                onClick={() => { setEmail('david.smith@thirdhorizon.com'); setPassword('demo'); setError(''); }}
                 className="text-left px-2 py-1.5 rounded hover:bg-gray-200 transition-colors"
               >
                 <span className="font-medium text-gray-900">David Smith</span>

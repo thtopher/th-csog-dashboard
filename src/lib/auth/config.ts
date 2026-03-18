@@ -10,7 +10,7 @@ import { DEFAULT_EXECUTIVES } from '@/config/executives';
 
 // Map email domains/addresses to executive IDs
 const EMAIL_TO_EXECUTIVE: Record<string, string> = {
-  'david@thirdhorizon.com': 'exec-ceo',
+  'david.smith@thirdhorizon.com': 'exec-ceo',
   'greg@thirdhorizon.com': 'exec-president',
   'jordana@thirdhorizon.com': 'exec-coo',
   'aisha@thirdhorizon.com': 'exec-cfo',
@@ -24,7 +24,7 @@ const ADMIN_EMAILS = ['topher@thirdhorizon.com'];
 
 // Demo users for development mode
 const DEMO_USERS: Record<string, { name: string; role: string; executiveId?: string; title?: string }> = {
-  'david@thirdhorizon.com': { name: 'David Smith', role: 'admin', executiveId: 'exec-ceo', title: 'CEO' },
+  'david.smith@thirdhorizon.com': { name: 'David Smith', role: 'admin', executiveId: 'exec-ceo', title: 'CEO' },
   'greg@thirdhorizon.com': { name: 'Greg Williams', role: 'csog_member', executiveId: 'exec-president', title: 'President' },
   'jordana@thirdhorizon.com': { name: 'Jordana Choucair', role: 'csog_member', executiveId: 'exec-coo', title: 'COO' },
   'aisha@thirdhorizon.com': { name: 'Aisha Waheed', role: 'csog_member', executiveId: 'exec-cfo', title: 'CFO' },

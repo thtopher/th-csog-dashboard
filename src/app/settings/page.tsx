@@ -26,7 +26,7 @@ const TABS = [
 // These users are synced from Microsoft Entra ID via SSO
 // In demo mode, these are the available demo accounts
 const DEMO_USERS = [
-  { id: 'exec-ceo', name: 'David Smith', email: 'david@thirdhorizon.com', role: 'admin' as UserRole, title: 'CEO' },
+  { id: 'exec-ceo', name: 'David Smith', email: 'david.smith@thirdhorizon.com', role: 'admin' as UserRole, title: 'CEO' },
   { id: 'exec-president', name: 'Greg Williams', email: 'greg@thirdhorizon.com', role: 'csog_member' as UserRole, title: 'President' },
   { id: 'exec-coo', name: 'Jordana Choucair', email: 'jordana@thirdhorizon.com', role: 'csog_member' as UserRole, title: 'COO' },
   { id: 'exec-cfo', name: 'Aisha Waheed', email: 'aisha@thirdhorizon.com', role: 'csog_member' as UserRole, title: 'CFO' },

@@ -8,14 +8,16 @@ import { StrategicGoalsTracker } from '@/components/csog/StrategicGoalsTracker';
 import { BusinessKPIs } from '@/components/csog/BusinessKPIs';
 import { SOPView } from '@/components/csog/SOPView';
 import { ContractPerformance } from '@/components/csog/ContractPerformance';
+import { TeamCalendar } from '@/components/csog/calendar/TeamCalendar';
 import { cn } from '@/lib/utils/cn';
-import { Loader2, Target, BarChart3, BookOpen, FileText } from 'lucide-react';
+import { Loader2, Target, BarChart3, BookOpen, FileText, CalendarDays } from 'lucide-react';
 
 const TABS = [
   { id: 'goals', label: 'Strategic Goals', icon: Target },
   { id: 'kpis', label: 'Business KPIs', icon: BarChart3 },
   { id: 'sop', label: 'SOP', icon: BookOpen },
   { id: 'contracts', label: 'Contract Performance', icon: FileText },
+  { id: 'calendar', label: 'Team Calendar', icon: CalendarDays },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -73,7 +75,7 @@ function CSOGHubContent() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">CSOG Hub</h1>
           <p className="mt-1 text-gray-500">
-            Strategic goals, KPIs, standard operating procedures, and contract performance
+            Strategic goals, KPIs, standard operating procedures, contract performance, and team calendar
           </p>
         </div>
 
@@ -113,6 +115,7 @@ function CSOGHubContent() {
           {activeTab === 'kpis' && <BusinessKPIs />}
           {activeTab === 'sop' && <SOPView />}
           {activeTab === 'contracts' && <ContractPerformance />}
+          {activeTab === 'calendar' && <TeamCalendar />}
         </div>
       </main>
     </div>

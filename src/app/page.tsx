@@ -43,24 +43,9 @@ export default function DashboardPage() {
       return;
     }
 
-    if (!authLoading && isAuthenticated && user) {
-      // Non-CEO executives go to their own page
-      if (user.executiveId && user.executiveId !== 'exec-ceo') {
-        router.push(`/executive/${user.executiveId}`);
-        return;
-      }
-
-      // Non-executive admins (like Topher) go to admin page
-      if (user.role === 'admin' && !user.executiveId) {
-        router.push('/admin');
-        return;
-      }
-
-      // CEO and CSOG members default to CSOG Hub
-      if (user.executiveId === 'exec-ceo' || user.role === 'csog_member') {
-        router.push('/csog');
-        return;
-      }
+    if (!authLoading && isAuthenticated) {
+      router.push('/csog');
+      return;
     }
   }, [authLoading, isAuthenticated, user, router]);
 

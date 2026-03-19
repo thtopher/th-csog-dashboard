@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
+import { ComingSoonOverlay } from '@/components/common/ComingSoonOverlay';
 import { RACIMatrix } from '@/components/raci/RACIMatrix';
 import { CodeTooltip } from '@/components/common/CodeTooltip';
 import { ExecutiveUploadStatus } from '@/components/dashboard/ExecutiveUploadStatus';
@@ -126,6 +127,7 @@ export default function ExecutiveDetailPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
+      <ComingSoonOverlay title="Executive Domain Views">
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Back Link */}
         <Link
@@ -221,6 +223,7 @@ export default function ExecutiveDetailPage() {
           </section>
         )}
       </main>
+      </ComingSoonOverlay>
     </div>
   );
 }

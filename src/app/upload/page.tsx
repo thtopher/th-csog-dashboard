@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
+import { ComingSoonOverlay } from '@/components/common/ComingSoonOverlay';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUploadTypesForExecutive, type UploadType } from '@/config/uploadTypes';
@@ -221,6 +222,7 @@ export default function UploadPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
+      <ComingSoonOverlay title="Data Upload">
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: 'Upload Data' }]} />
 
@@ -505,6 +507,7 @@ export default function UploadPage() {
           </div>
         )}
       </main>
+      </ComingSoonOverlay>
 
       {/* Bulk Upload Modal */}
       <BulkUploadModal

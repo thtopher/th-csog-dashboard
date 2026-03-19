@@ -77,7 +77,7 @@ export function Header() {
           <nav className="flex items-center gap-1">
             {/* CEO Scorecard - only visible for CEO and admins */}
             {(user?.executiveId === 'exec-ceo' || user?.role === 'admin') && (
-              <NavLink href="/" icon={LayoutDashboard} isActive={pathname === '/'}>
+              <NavLink href="/" icon={LayoutDashboard} isActive={pathname === '/'} badge="Soon">
                 CEO Scorecard
               </NavLink>
             )}
@@ -100,6 +100,7 @@ export function Header() {
               >
                 <Users size={16} />
                 <span className="hidden sm:inline">Executives</span>
+                <span className="hidden sm:inline text-[9px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 border border-amber-200 rounded px-1 py-0.5 leading-none">Soon</span>
                 <ChevronDown size={14} className="text-gray-400" />
               </button>
 
@@ -152,13 +153,13 @@ export function Header() {
               Performance
             </NavLink>
 
-            <NavLink href="/upload" icon={Upload} isActive={pathname === '/upload'}>
+            <NavLink href="/upload" icon={Upload} isActive={pathname === '/upload'} badge="Soon">
               Upload
             </NavLink>
 
             {/* Admin Link - Only for admins */}
             {isAdmin && (
-              <NavLink href="/admin" icon={Shield} isActive={pathname === '/admin'}>
+              <NavLink href="/admin" icon={Shield} isActive={pathname === '/admin'} badge="Soon">
                 Admin
               </NavLink>
             )}
@@ -232,9 +233,10 @@ interface NavLinkProps {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   children: React.ReactNode;
   isActive?: boolean;
+  badge?: string;
 }
 
-function NavLink({ href, icon: Icon, children, isActive }: NavLinkProps) {
+function NavLink({ href, icon: Icon, children, isActive, badge }: NavLinkProps) {
   return (
     <Link
       href={href}
@@ -247,6 +249,11 @@ function NavLink({ href, icon: Icon, children, isActive }: NavLinkProps) {
     >
       <Icon size={16} />
       <span className="hidden sm:inline">{children}</span>
+      {badge && (
+        <span className="hidden sm:inline text-[9px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 border border-amber-200 rounded px-1 py-0.5 leading-none">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }

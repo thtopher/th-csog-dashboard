@@ -7,7 +7,6 @@ import {
   KPI_STORAGE_KEY,
   type BusinessKPI,
   type KPISnapshot,
-  type KPICategory,
 } from '@/config/businessKpis';
 import { cn } from '@/lib/utils/cn';
 import {
@@ -16,7 +15,6 @@ import {
   Minus,
   Plus,
   X,
-  BarChart3,
 } from 'lucide-react';
 
 export function BusinessKPIs() {
@@ -81,18 +79,7 @@ export function BusinessKPIs() {
       {/* Category Sections */}
       {KPI_CATEGORIES.map((cat) => {
         const kpis = BUSINESS_KPIS.filter((k) => k.category === cat.id);
-        if (kpis.length === 0 && cat.id === 'client_success') {
-          return (
-            <CategorySection key={cat.id} category={cat} isEmpty>
-              <div className="rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 p-8 text-center">
-                <BarChart3 className="mx-auto h-8 w-8 text-gray-300" />
-                <p className="mt-2 text-sm font-medium text-gray-400">
-                  Client Success KPIs coming soon
-                </p>
-              </div>
-            </CategorySection>
-          );
-        }
+        if (kpis.length === 0) return null;
         return (
           <CategorySection key={cat.id} category={cat}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -137,11 +124,9 @@ export function BusinessKPIs() {
 function CategorySection({
   category,
   children,
-  isEmpty,
 }: {
   category: { id: string; label: string; color: string };
   children: React.ReactNode;
-  isEmpty?: boolean;
 }) {
   return (
     <div>
@@ -244,9 +229,29 @@ function KPICard({
 
       {/* Target indicator */}
       {kpi.target !== undefined && (
-        <p className="mt-1 text-xs text-gray-400">
-          Target: {formatValue(kpi.target)}
-        </p>
+        <div className="mt-1">
+          {latest && kpi.unit !== 'percent' ? (
+            <div>
+              <div className="flex items-center justify-between text-xs text-gray-400">
+                <span>{Math.round((latest.value / kpi.target) * 100)}% of goal</span>
+                <span>Target: {formatValue(kpi.target)}</span>
+              </div>
+              <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100">
+                <div
+                  className="h-1.5 rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, (latest.value / kpi.target) * 100)}%`,
+                    backgroundColor: categoryColor,
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400">
+              Target: {formatValue(kpi.target)}
+            </p>
+          )}
+        </div>
       )}
 
       {/* Mini sparkline area */}

@@ -1,5 +1,5 @@
 // Business KPI definitions and initial data
-// These 5 KPIs are the first to go live, with manual data entry
+// 8 KPIs with manual data entry
 
 export type KPICategory = 'growth' | 'ops' | 'client_success' | 'finance';
 
@@ -67,6 +67,26 @@ export const BUSINESS_KPIS: BusinessKPI[] = [
     direction: 'higher_better',
   },
 
+  // Client Success
+  {
+    id: 'starset-national-subscriptions',
+    name: 'Starset National Subscriptions',
+    category: 'client_success',
+    unit: 'number',
+    description: 'DaaS: Annual Starset National subscription count vs. goal',
+    target: 15,
+    direction: 'higher_better',
+  },
+  {
+    id: 'mma-partnership-projects',
+    name: 'MMA Partnership Projects',
+    category: 'client_success',
+    unit: 'number',
+    description: 'Annual count of MMA partnership projects',
+    target: 10,
+    direction: 'higher_better',
+  },
+
   // Finance
   {
     id: 'six-month-cash-projection',
@@ -74,6 +94,17 @@ export const BUSINESS_KPIS: BusinessKPI[] = [
     category: 'finance',
     unit: 'currency',
     description: 'Projected cash position 6 months forward',
+    direction: 'higher_better',
+  },
+
+  // Growth
+  {
+    id: 'mhpi-net-new-revenue',
+    name: 'MHPI Net New Revenue',
+    category: 'growth',
+    unit: 'currency',
+    description: 'MHPI: Annual net new revenue target',
+    target: 1000000,
     direction: 'higher_better',
   },
 ];

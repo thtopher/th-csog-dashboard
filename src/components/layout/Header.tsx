@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TemporalBanner } from '@/components/common/TemporalBanner';
 import { DEFAULT_EXECUTIVES } from '@/config/executives';
 import { Avatar } from '@/components/common/Avatar';
+import { MigrationNotice, MigrationNoticeButton } from '@/components/common/MigrationNotice';
 import {
   LayoutDashboard,
   Upload,
@@ -169,7 +170,9 @@ export function Header() {
             </NavLink>
           </nav>
 
-          {/* User Menu */}
+          {/* Migration Notice Button + User Menu */}
+          <div className="flex items-center gap-2">
+          <MigrationNoticeButton />
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
@@ -219,11 +222,15 @@ export function Header() {
               </>
             )}
           </div>
+          </div>
         </div>
       </header>
 
       {/* Temporal Banner - only show on authenticated pages */}
       {user && <TemporalBanner />}
+
+      {/* Migration notice modal - auto-shows on first login */}
+      {user && <MigrationNotice />}
     </>
   );
 }
